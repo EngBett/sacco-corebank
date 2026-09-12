@@ -1,0 +1,49 @@
+name: ci-frontend
+on:
+  pull_request:
+    paths: ["frontend/**", "shared-contracts/**"]
+  push:
+    branches: [main]
+    paths: ["frontend/**", "shared-contracts/**"]
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: shared-contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run generate
+      - run: npm run check
+      - name: Generated client must match the committed OpenAPI document
+        run: git diff --exit-code -- src/api.d.ts || (echo "shared-contracts/src/api.d.ts is stale — run npm run generate and commit" && exit 1)
+  portal:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/portal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+  public-site:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/public-site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build

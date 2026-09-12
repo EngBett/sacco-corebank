@@ -1,0 +1,45 @@
+name: ci-backend
+on:
+  pull_request:
+    paths: ["backend/**", "global.json", ".github/workflows/ci-backend.yml"]
+  push:
+    branches: [main]
+    paths: ["backend/**", "global.json"]
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sacco
+          POSTGRES_PASSWORD: sacco
+          POSTGRES_DB: sacco_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U sacco"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      SACCO_CONNECTION: "Host=localhost;Port=5432;Database=sacco_ci;Username=sacco;Password=sacco"
+      # Integration tests reuse the service container instead of starting one via Testcontainers.
+      SACCO_TEST_CONNECTION: "Host=localhost;Port=5432;Database=sacco_ci;Username=sacco;Password=sacco"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Restore
+        run: dotnet restore backend/Sacco.sln
+      - name: Build
+        run: dotnet build backend/Sacco.sln --no-restore -c Release
+      - name: Migrate and seed demo data (idempotent)
+        run: dotnet run --project backend/seed/Sacco.Seed -c Release --no-build
+      - name: Unit tests
+        run: dotnet test --project backend/tests/Sacco.UnitTests -c Release --no-build
+      - name: Integration tests (real Postgres, seeded Demo SACCO, sandbox providers)
+        run: dotnet test --project backend/tests/Sacco.IntegrationTests -c Release --no-build
+      - name: Check generated OpenAPI contract is committed
+        run: git diff --exit-code -- shared-contracts/openapi || (echo "shared-contracts/openapi is stale — rebuild and commit it" && exit 1)

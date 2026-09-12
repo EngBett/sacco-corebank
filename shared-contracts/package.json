@@ -1,0 +1,16 @@
+{
+  "name": "@sacco/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generated TypeScript types for the SACCO Platform API (from openapi/Sacco.Api.json). Do not hand-edit generated files.",
+  "main": "dist/index.js",
+  "types": "src/index.ts",
+  "scripts": {
+    "generate": "openapi-typescript openapi/Sacco.Api.json -o src/api.d.ts",
+    "check": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.6.1",
+    "typescript": "^5.7.3"
+  }
+}

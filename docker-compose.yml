@@ -1,0 +1,77 @@
+# Local development stack. Only `postgres` runs by default; the other services are opt-in profiles.
+# Everything is sandbox: no production credentials exist anywhere in this file.
+#   docker compose up -d postgres
+#   docker compose --profile app run --rm seed        # migrate + seed the Demo SACCO
+#   docker compose --profile app up -d api portal public-site
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sacco-postgres
+    environment:
+      POSTGRES_USER: sacco
+      POSTGRES_PASSWORD: sacco
+      POSTGRES_DB: sacco
+    ports:
+      - "5432:5432"
+    volumes:
+      - sacco-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sacco"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  seed:
+    profiles: ["app"]
+    build: { context: ., dockerfile: backend/Dockerfile, target: seed }
+    environment:
+      SACCO_CONNECTION: "Host=postgres;Port=5432;Database=sacco;Username=sacco;Password=sacco"
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    profiles: ["app"]
+    build: { context: ., dockerfile: backend/Dockerfile, target: api }
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Sacco: "Host=postgres;Port=5432;Database=sacco;Username=sacco;Password=sacco"
+      IdentityServer__IssuerUri: "http://localhost:5000"
+      IdentityServer__SigningCredential: Developer
+      Database__MigrateOnStartup: "true"
+      Tenancy__DefaultTenantSlug: demo
+      Payments__SandboxAutoCallbackSeconds: "5"
+    ports:
+      - "5000:8080"
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  portal:
+    profiles: ["app"]
+    build: { context: ., dockerfile: frontend/portal/Dockerfile }
+    environment:
+      API_BASE_URL: "http://api:8080"
+      OIDC_ISSUER: "http://localhost:5000"
+      OIDC_CLIENT_ID: portal-bff
+      OIDC_CLIENT_SECRET: portal-bff-dev-secret
+      OIDC_REDIRECT_URI: "http://localhost:3000/api/auth/callback"
+      OIDC_POST_LOGOUT_REDIRECT_URI: "http://localhost:3000/"
+      SESSION_SECRET: dev-only-session-secret-change-me-please-32chars
+      NEXT_PUBLIC_DEFAULT_TENANT: demo
+    ports:
+      - "3000:3000"
+    depends_on: [api]
+
+  public-site:
+    profiles: ["app"]
+    build: { context: ., dockerfile: frontend/public-site/Dockerfile }
+    environment:
+      API_BASE_URL: "http://api:8080"
+      NEXT_PUBLIC_DEFAULT_TENANT: demo
+      PUBLIC_API_KEY: sandbox-public-api-key
+      TURNSTILE_SANDBOX: "true"
+    ports:
+      - "3001:3001"
+    depends_on: [api]
+
+volumes:
+  sacco-pgdata:

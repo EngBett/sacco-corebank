@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Sacco.Shared/Sacco.Shared.csproj" />
+    <ProjectReference Include="../Sacco.Modules.Platform/Sacco.Modules.Platform.csproj" />
+    <ProjectReference Include="../Sacco.Modules.Ledger/Sacco.Modules.Ledger.csproj" />
+    <ProjectReference Include="../Sacco.Modules.Members/Sacco.Modules.Members.csproj" />
+    <ProjectReference Include="../Sacco.Modules.Savings/Sacco.Modules.Savings.csproj" />
+    <ProjectReference Include="../Sacco.Modules.Lending/Sacco.Modules.Lending.csproj" />
+    <ProjectReference Include="../Sacco.Modules.Payments/Sacco.Modules.Payments.csproj" />
+    <ProjectReference Include="../Sacco.Modules.Reporting/Sacco.Modules.Reporting.csproj" />
+    <ProjectReference Include="../Sacco.Modules.Identity/Sacco.Modules.Identity.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>

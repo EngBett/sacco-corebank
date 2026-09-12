@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <NoWarn>$(NoWarn);xUnit1051</NoWarn>
+    <OutputType>Exe</OutputType>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Sacco.Shared/Sacco.Shared.csproj" />
+    <ProjectReference Include="../../src/Sacco.Modules.Ledger/Sacco.Modules.Ledger.csproj" />
+    <ProjectReference Include="../../src/Sacco.Modules.Members/Sacco.Modules.Members.csproj" />
+    <ProjectReference Include="../../src/Sacco.Modules.Savings/Sacco.Modules.Savings.csproj" />
+    <ProjectReference Include="../../src/Sacco.Modules.Lending/Sacco.Modules.Lending.csproj" />
+    <ProjectReference Include="../../src/Sacco.Modules.Payments/Sacco.Modules.Payments.csproj" />
+    <ProjectReference Include="../../src/Sacco.Modules.Reporting/Sacco.Modules.Reporting.csproj" />
+    <ProjectReference Include="../../src/Sacco.Modules.Identity/Sacco.Modules.Identity.csproj" />
+    <ProjectReference Include="../../src/Sacco.Modules.Platform/Sacco.Modules.Platform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Shouldly" />
+  </ItemGroup>
+</Project>

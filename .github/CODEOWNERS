@@ -1,0 +1,9 @@
+# Default owners — replace with real team handles before first PR.
+* @sacco-platform/core-team
+
+/backend/src/Sacco.Modules.Ledger/     @sacco-platform/ledger-owners
+/backend/src/Sacco.Modules.Lending/    @sacco-platform/lending-owners
+/backend/src/Sacco.Sagas/              @sacco-platform/payments-owners
+/docs/compliance/                      @sacco-platform/compliance-owners
+/frontend/                             @sacco-platform/frontend-owners
+/infrastructure/                       @sacco-platform/platform-owners
