@@ -1092,6 +1092,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/loans/{id}/score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetLoanCreditScore"];
+        put?: never;
+        post: operations["RecomputeLoanCreditScore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/{id}/score/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetLoanCreditScoreHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/loans/{id}/guarantors": {
         parameters: {
             query?: never;
@@ -1230,6 +1262,54 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["AccrueLoanInterest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/scoring/scorecard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetScorecard"];
+        put: operations["SetScorecard"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/scoring/factors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListScoringFactors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/scoring/bureau": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCreditBureauInfo"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1604,6 +1684,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetUnreadNotificationCount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MarkNotificationRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MarkAllNotificationsRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/hub-ticket": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["IssueNotificationHubTicket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1697,6 +1857,9 @@ export interface components {
             /** Format: int32 */
             accrued: number | string;
         };
+        AnonymousTypeOfstring: {
+            name: null | string;
+        };
         AnonymousTypeOfstringAndSandboxCallback: {
             message: null | string;
             callback: components["schemas"]["SandboxCallback"];
@@ -1754,6 +1917,8 @@ export interface components {
             details: null | string;
             correlationId: null | string;
         };
+        /** @enum {unknown} */
+        BureauStatus: "Clear" | "Listed" | "Unavailable";
         CapitalAdequacy: {
             /** Format: date */
             asOf: string;
@@ -1864,6 +2029,38 @@ export interface components {
             password: string;
             roleIds: string[];
         };
+        CreditScoreResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            loanId: string;
+            stage: components["schemas"]["ScoreStage"];
+            /** Format: int32 */
+            score: number | string;
+            grade: string;
+            recommendation: components["schemas"]["ScoreRecommendation"];
+            recommendationReason: string;
+            bureauStatus: components["schemas"]["BureauStatus"];
+            bureauReference: null | string;
+            bureauNarrative: null | string;
+            factors: components["schemas"]["FactorScore"][];
+            /** Format: date-time */
+            scorecardUpdatedAt: string;
+            /** Format: date-time */
+            computedAt: string;
+            /** Format: uuid */
+            computedByUserId: string;
+        };
+        CreditScoreSummary: {
+            /** Format: int32 */
+            score: number | string;
+            grade: string;
+            recommendation: components["schemas"]["ScoreRecommendation"];
+            bureauStatus: components["schemas"]["BureauStatus"];
+            stage: components["schemas"]["ScoreStage"];
+            /** Format: date-time */
+            computedAt: string;
+        };
         DeclareDividendRequest: {
             /** Format: int32 */
             financialYear: number | string;
@@ -1961,6 +2158,16 @@ export interface components {
         };
         /** @enum {unknown} */
         EntryDirection: "Debit" | "Credit";
+        FactorScore: {
+            key: string;
+            label: string;
+            value: string;
+            /** Format: double */
+            points: number | string;
+            /** Format: int32 */
+            maxPoints: number | string;
+            note: string;
+        };
         FinancialPosition: {
             segment: null | components["schemas"]["Segment"];
             /** Format: date */
@@ -2035,6 +2242,12 @@ export interface components {
         };
         /** @enum {unknown} */
         GuarantorStatus: "Pending" | "Accepted" | "Declined" | "Released";
+        HubTicketResponse: {
+            ticket: string;
+            /** Format: date-time */
+            expiresAt: string;
+            hubPath: string;
+        };
         IncomeStatement: {
             segment: null | components["schemas"]["Segment"];
             /** Format: date */
@@ -2215,6 +2428,7 @@ export interface components {
             appliedAt: string;
             /** Format: date */
             disbursementDate: null | string;
+            creditScore: null | components["schemas"]["CreditScoreSummary"];
         };
         LoanProductResponse: {
             /** Format: uuid */
@@ -2307,9 +2521,14 @@ export interface components {
             guarantors: components["schemas"]["GuarantorResponse"][];
             approvals: components["schemas"]["ApprovalResponse"][];
             schedule: components["schemas"]["InstallmentResponse"][];
+            creditScore: null | components["schemas"]["CreditScoreSummary"];
         };
         /** @enum {unknown} */
         LoanStatus: "Applied" | "Appraised" | "PendingApproval" | "Approved" | "Active" | "Closed" | "Rejected" | "Cancelled" | "WrittenOff";
+        MarkAllReadResponse: {
+            /** Format: int32 */
+            marked: number | string;
+        };
         MemberListItem: {
             /** Format: uuid */
             id: string;
@@ -2370,6 +2589,18 @@ export interface components {
         NotesRequest: {
             notes: null | string;
         };
+        NotificationResponse: {
+            /** Format: uuid */
+            id: string;
+            kind: string;
+            title: string;
+            body: string;
+            link: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            readAt: null | string;
+        };
         OpenAccountRequest: {
             /** Format: uuid */
             memberId: string;
@@ -2421,6 +2652,15 @@ export interface components {
         };
         PagedResultOfMemberListItem: {
             items: components["schemas"]["MemberListItem"][];
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+            /** Format: int32 */
+            totalCount: number | string;
+        };
+        PagedResultOfNotificationResponse: {
+            items: components["schemas"]["NotificationResponse"][];
             /** Format: int32 */
             page: number | string;
             /** Format: int32 */
@@ -2790,10 +3030,48 @@ export interface components {
         };
         /** @enum {unknown} */
         SavingsAccountStatus: "Active" | "Matured" | "Closed";
+        ScorecardFactorDraft: {
+            key: string;
+            /** Format: int32 */
+            maxPoints: number | string;
+        };
+        ScorecardResponse: {
+            factors: components["schemas"]["ScorecardFactorDraft"][];
+            /** Format: int32 */
+            totalPoints: number | string;
+            /** Format: int32 */
+            approveThreshold: number | string;
+            /** Format: int32 */
+            referThreshold: number | string;
+            declineIfBureauListed: boolean;
+            source: null | string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: uuid */
+            updatedByUserId: string;
+        };
+        /** @enum {unknown} */
+        ScoreRecommendation: "Approve" | "Refer" | "Decline";
+        /** @enum {unknown} */
+        ScoreStage: "Application" | "Appraisal" | "Manual";
+        ScoringFactorDefinition: {
+            key: string;
+            label: string;
+            description: string;
+        };
         /** @enum {unknown} */
         Segment: "Fosa" | "Bosa";
         SetProvisioningConfigRequest: {
             buckets: components["schemas"]["AgingBucketDraft"][];
+            source: null | string;
+        };
+        SetScorecardRequest: {
+            factors: components["schemas"]["ScorecardFactorDraft"][];
+            /** Format: int32 */
+            approveThreshold: number | string;
+            /** Format: int32 */
+            referThreshold: number | string;
+            declineIfBureauListed: boolean;
             source: null | string;
         };
         SetUserRolesRequest: {
@@ -2904,6 +3182,10 @@ export interface components {
             normalBalance?: components["schemas"]["EntryDirection"];
             /** @default false */
             isControlAccount: boolean;
+        };
+        UnreadCountResponse: {
+            /** Format: int32 */
+            unread: number | string;
         };
         UpdateBrandingRequest: {
             primaryColor: string;
@@ -4912,6 +5194,79 @@ export interface operations {
             };
         };
     };
+    GetLoanCreditScore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreditScoreResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RecomputeLoanCreditScore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreditScoreResponse"];
+                };
+            };
+        };
+    };
+    GetLoanCreditScoreHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreditScoreResponse"][];
+                };
+            };
+        };
+    };
     AddLoanGuarantor: {
         parameters: {
             query?: never;
@@ -5128,6 +5483,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnonymousTypeOfint"];
+                };
+            };
+        };
+    };
+    GetScorecard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScorecardResponse"];
+                };
+            };
+        };
+    };
+    SetScorecard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetScorecardRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScorecardResponse"];
+                };
+            };
+        };
+    };
+    ListScoringFactors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoringFactorDefinition"][];
+                };
+            };
+        };
+    };
+    GetCreditBureauInfo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnonymousTypeOfstring"];
                 };
             };
         };
@@ -5729,6 +6168,112 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatutoryReturnSummary"];
+                };
+            };
+        };
+    };
+    ListNotifications: {
+        parameters: {
+            query?: {
+                unreadOnly?: boolean;
+                page?: number | string;
+                pageSize?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfNotificationResponse"];
+                };
+            };
+        };
+    };
+    GetUnreadNotificationCount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCountResponse"];
+                };
+            };
+        };
+    };
+    MarkNotificationRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationResponse"];
+                };
+            };
+        };
+    };
+    MarkAllNotificationsRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkAllReadResponse"];
+                };
+            };
+        };
+    };
+    IssueNotificationHubTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubTicketResponse"];
                 };
             };
         };

@@ -16,8 +16,11 @@ public interface ITenantDirectory
     void Invalidate(string slug);
 }
 
-public sealed class TenantDirectory(PlatformDbContext db, IMemoryCache cache) : ITenantDirectory
+public sealed class TenantDirectory(PlatformDbContext db, IMemoryCache cache) : ITenantDirectory, Sacco.Shared.Tenancy.ITenantEnumerator
 {
+    public async Task<IReadOnlyList<(Guid Id, string Slug)>> ListActiveAsync(CancellationToken ct)
+        => (await db.Tenants.AsNoTracking().Where(t => t.IsActive).OrderBy(t => t.Slug).Select(t => new { t.Id, t.Slug }).ToListAsync(ct)).Select(t => (t.Id, t.Slug)).ToList();
+
     private static readonly TimeSpan Ttl = TimeSpan.FromMinutes(5);
 
     public async Task<TenantInfo?> FindBySlugAsync(string slug, CancellationToken ct)

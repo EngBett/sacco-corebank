@@ -49,8 +49,14 @@ public sealed record MemberSavingsSummary(
 public sealed record WithdrawalPayoutInfo(Guid Id, string AccountNumber, Guid MemberId, decimal Amount, decimal Fee, string Channel, string? Destination, bool IsApproved, bool IsPaid);
 
 /// <summary>Savings module's public surface for Lending and Payments.</summary>
+public enum ExitPayoutChannel { Cash = 1, BankTransfer = 2 }
+public sealed record ExitAccountPayout(string AccountNumber, ProductKind Kind, decimal Amount, string? JournalReference);
+public sealed record ExitPayoutResult(IReadOnlyList<ExitAccountPayout> Accounts, decimal TotalPaid);
+
 public interface ISavingsService
 {
+    /// <summary>Pays every remaining balance out through the chosen channel and closes the member's accounts. Holds must already be released.</summary>
+    Task<ExitPayoutResult> CloseAccountsOnExitAsync(Guid memberId, ExitPayoutChannel channel, Guid byUserId, CancellationToken ct);
     Task<DepositResult> DepositAsync(DepositCommand command, CancellationToken ct);
     Task<MemberSavingsSummary> GetMemberSummaryAsync(Guid memberId, CancellationToken ct);
     /// <summary>An approved withdrawal that a payment provider should pay out (mobile money / bank).</summary>

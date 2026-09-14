@@ -18,6 +18,7 @@ public static class PlatformModule
         services.AddModuleDbContext<PlatformDbContext>(connectionString, PlatformDbContext.SchemaName);
         services.Configure<TenancyOptions>(configuration.GetSection(TenancyOptions.SectionName));
         services.AddScoped<ITenantDirectory, TenantDirectory>();
+        services.AddScoped<Sacco.Shared.Tenancy.ITenantEnumerator, TenantDirectory>();
         services.AddScoped<IAuditLogger, AuditLogger>();
         services.AddSingleton<IModuleEndpoints, PlatformEndpoints>();
         return services;

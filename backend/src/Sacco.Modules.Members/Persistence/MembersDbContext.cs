@@ -58,6 +58,8 @@ public class MembersDbContext(DbContextOptions<MembersDbContext> options, ITenan
             b.Property(m => m.Source).HasConversion<int>();
             b.Property(m => m.KycRejectionReason).HasMaxLength(500);
             b.Property(m => m.SuspensionReason).HasMaxLength(500);
+            b.Property(m => m.ExitReason).HasMaxLength(500);
+            b.Property(m => m.ExitSettlementJson).HasColumnType("jsonb");
             b.HasIndex(m => new { m.TenantId, m.KycStatus });
             b.HasMany(m => m.Documents).WithOne().HasForeignKey(d => d.MemberId).OnDelete(DeleteBehavior.Cascade);
             b.Navigation(m => m.Documents).AutoInclude();

@@ -25,6 +25,21 @@ public static class Permissions
         public const string KycVerify = "members.kyc.verify";
         public const string Suspend = "members.suspend";
         public const string ApplicationsReview = "members.applications.review";
+        public const string Exit = "members.exit";
+        public const string ExitApprove = "members.exit.approve";
+        public const string SelfServiceManage = "members.self_service.manage";
+    }
+
+    /// <summary>Granted implicitly to member logins (never to staff roles): a member may only see and act on their own records.</summary>
+    public static class Self
+    {
+        public const string ProfileView = "self.profile.view";
+        public const string AccountsView = "self.accounts.view";
+        public const string StatementsView = "self.statements.view";
+        public const string LoansView = "self.loans.view";
+        public const string LoansApply = "self.loans.apply";
+        public const string PaymentsInitiate = "self.payments.initiate";
+        public static readonly IReadOnlyList<string> All = [ProfileView, AccountsView, StatementsView, LoansView, LoansApply, PaymentsInitiate];
     }
 
     public static class Savings
@@ -50,6 +65,7 @@ public static class Permissions
         public const string Repay = "loans.repay";
         public const string Restructure = "loans.restructure";
         public const string ProvisioningManage = "loans.provisioning.manage";
+        public const string ScoringManage = "loans.scoring.manage";
     }
 
     public static class Payments
@@ -91,6 +107,9 @@ public static class Permissions
         new(Members.KycVerify, "Verify or reject member KYC"),
         new(Members.Suspend, "Suspend or reinstate a member"),
         new(Members.ApplicationsReview, "Review public membership applications"),
+        new(Members.Exit, "Request a member's exit (maker)"),
+        new(Members.ExitApprove, "Approve a member's exit and settle balances (checker)"),
+        new(Members.SelfServiceManage, "Enable or disable a member's self-service login"),
 
         new(Savings.View, "View savings/share accounts"),
         new(Savings.ProductsManage, "Maintain savings and share products"),
@@ -110,6 +129,7 @@ public static class Permissions
         new(Loans.Repay, "Post loan repayments"),
         new(Loans.Restructure, "Restructure or write off a loan"),
         new(Loans.ProvisioningManage, "Maintain provisioning and aging configuration"),
+        new(Loans.ScoringManage, "Maintain the credit scorecard (weights and cut-offs)"),
 
         new(Payments.View, "View payment transactions"),
         new(Payments.Initiate, "Initiate mobile money / bank payments"),
@@ -124,7 +144,17 @@ public static class Permissions
         new(Admin.TenantManage, "Manage tenant settings and branding"),
         new(Admin.AuditView, "View the audit log"),
         new(Admin.ConfigManage, "Manage system configuration"),
+
+        new(Self.ProfileView, "Member self-service: view own profile"),
+        new(Self.AccountsView, "Member self-service: view own accounts and balances"),
+        new(Self.StatementsView, "Member self-service: view own statements"),
+        new(Self.LoansView, "Member self-service: view own loans"),
+        new(Self.LoansApply, "Member self-service: apply for a loan"),
+        new(Self.PaymentsInitiate, "Member self-service: initiate a mobile-money deposit"),
     ];
+
+    /// <summary>Permissions a staff role may bundle: everything except the member self-service set.</summary>
+    public static IEnumerable<PermissionDefinition> StaffAssignable => All.Where(p => !p.Name.StartsWith("self.", StringComparison.Ordinal));
 
     public static bool IsKnown(string permission) => All.Any(p => p.Name == permission);
 }

@@ -19,7 +19,20 @@ public static class LendingModule
         services.AddScoped<RepaymentService>();
         services.AddScoped<ILendingService>(sp => sp.GetRequiredService<RepaymentService>());
         services.AddScoped<ProvisioningService>();
+        services.AddScoped<CreditScoringService>();
+        services.AddScoped<LoanAdjustmentService>();
+        services.AddSingleton<LendingMaintenanceService>();
+        var bureauMode = configuration[$"{LendingSettings.SectionName}:CreditBureau:Mode"] ?? "Sandbox";
+        if (string.Equals(bureauMode, "Live", StringComparison.OrdinalIgnoreCase)) services.AddSingleton<ICreditBureau, LiveCreditBureauNotConfigured>();
+        else services.AddSingleton<ICreditBureau, SandboxCreditBureau>();
         services.AddSingleton<IModuleEndpoints, LendingEndpoints>();
+        return services;
+    }
+
+    /// <summary>Daily accrual + bureau retention purge. The API host calls this; tools and tests do not.</summary>
+    public static IServiceCollection AddLendingScheduler(this IServiceCollection services)
+    {
+        services.AddHostedService(sp => sp.GetRequiredService<LendingMaintenanceService>());
         return services;
     }
 }

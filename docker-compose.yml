@@ -39,6 +39,7 @@ services:
       IdentityServer__SigningCredential: Developer
       Database__MigrateOnStartup: "true"
       Tenancy__DefaultTenantSlug: demo
+      Cors__AllowedOrigins__0: "http://localhost:3000"
       Payments__SandboxAutoCallbackSeconds: "5"
     ports:
       - "5000:8080"
@@ -50,6 +51,7 @@ services:
     build: { context: ., dockerfile: frontend/portal/Dockerfile }
     environment:
       API_BASE_URL: "http://api:8080"
+      API_BROWSER_URL: "http://localhost:5000"
       OIDC_ISSUER: "http://localhost:5000"
       OIDC_CLIENT_ID: portal-bff
       OIDC_CLIENT_SECRET: portal-bff-dev-secret

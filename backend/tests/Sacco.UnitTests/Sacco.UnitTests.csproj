@@ -17,6 +17,7 @@
     <ProjectReference Include="../../src/Sacco.Modules.Reporting/Sacco.Modules.Reporting.csproj" />
     <ProjectReference Include="../../src/Sacco.Modules.Identity/Sacco.Modules.Identity.csproj" />
     <ProjectReference Include="../../src/Sacco.Modules.Platform/Sacco.Modules.Platform.csproj" />
+    <ProjectReference Include="../../src/Sacco.Modules.Notifications/Sacco.Modules.Notifications.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

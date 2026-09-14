@@ -2667,6 +2667,341 @@
         }
       }
     },
+    "/api/loans/{id}/write-off": {
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "RequestLoanWriteOff",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanAdjustmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/{id}/restructure": {
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "RequestLoanRestructure",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestructureRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanAdjustmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/{id}/adjustments": {
+      "get": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "ListLoanAdjustments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LoanAdjustmentResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/adjustments/{adjustmentId}/approve": {
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "ApproveLoanAdjustment",
+        "parameters": [
+          {
+            "name": "adjustmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanAdjustmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/adjustments/{adjustmentId}/reject": {
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "RejectLoanAdjustment",
+        "parameters": [
+          {
+            "name": "adjustmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanAdjustmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/bureau-consent": {
+      "get": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "GetBureauConsentText",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BureauConsentInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/maintenance/run": {
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "RunLendingMaintenance",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaintenanceRunResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/{id}/score": {
+      "get": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "GetLoanCreditScore",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditScoreResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "RecomputeLoanCreditScore",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditScoreResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/{id}/score/history": {
+      "get": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "GetLoanCreditScoreHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CreditScoreResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/loans/{id}/guarantors": {
       "post": {
         "tags": [
@@ -3014,6 +3349,168 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AnonymousTypeOfint"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/loans": {
+      "get": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "GetMyLoans",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberLoanSnapshot"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "ApplyForMyLoan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelfApplyLoanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberLoanSnapshot"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/loans/bureau-consent": {
+      "get": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "GetMyBureauConsentText",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BureauConsentInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/scoring/scorecard": {
+      "get": {
+        "tags": [
+          "Credit scoring"
+        ],
+        "operationId": "GetScorecard",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScorecardResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Credit scoring"
+        ],
+        "operationId": "SetScorecard",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetScorecardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScorecardResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/scoring/factors": {
+      "get": {
+        "tags": [
+          "Credit scoring"
+        ],
+        "operationId": "ListScoringFactors",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScoringFactorDefinition"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/scoring/bureau": {
+      "get": {
+        "tags": [
+          "Credit scoring"
+        ],
+        "operationId": "GetCreditBureauInfo",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnonymousTypeOfstring"
                 }
               }
             }
@@ -3880,6 +4377,153 @@
           }
         }
       }
+    },
+    "/api/notifications": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "ListNotifications",
+        "parameters": [
+          {
+            "name": "unreadOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfNotificationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/unread-count": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "GetUnreadNotificationCount",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCountResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/{id}/read": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "MarkNotificationRead",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/read-all": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "MarkAllNotificationsRead",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarkAllReadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/hub-ticket": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "IssueNotificationHubTicket",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HubTicketResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4250,6 +4894,20 @@
           }
         }
       },
+      "AnonymousTypeOfstring": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AnonymousTypeOfstringAndSandboxCallback": {
         "required": [
           "message",
@@ -4381,6 +5039,10 @@
               "null",
               "string"
             ]
+          },
+          "bureauConsent": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -4465,6 +5127,28 @@
             ]
           }
         }
+      },
+      "BureauConsentInfo": {
+        "required": [
+          "required",
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "boolean"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "BureauStatus": {
+        "enum": [
+          "Clear",
+          "Listed",
+          "Unavailable"
+        ]
       },
       "CapitalAdequacy": {
         "required": [
@@ -4959,6 +5643,125 @@
           }
         }
       },
+      "CreditScoreResponse": {
+        "required": [
+          "id",
+          "loanId",
+          "stage",
+          "score",
+          "grade",
+          "recommendation",
+          "recommendationReason",
+          "bureauStatus",
+          "bureauReference",
+          "bureauNarrative",
+          "factors",
+          "scorecardUpdatedAt",
+          "computedAt",
+          "computedByUserId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "loanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/ScoreStage"
+          },
+          "score": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "grade": {
+            "type": "string"
+          },
+          "recommendation": {
+            "$ref": "#/components/schemas/ScoreRecommendation"
+          },
+          "recommendationReason": {
+            "type": "string"
+          },
+          "bureauStatus": {
+            "$ref": "#/components/schemas/BureauStatus"
+          },
+          "bureauReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bureauNarrative": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "factors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FactorScore"
+            }
+          },
+          "scorecardUpdatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "computedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "CreditScoreSummary": {
+        "required": [
+          "score",
+          "grade",
+          "recommendation",
+          "bureauStatus",
+          "stage",
+          "computedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "score": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "grade": {
+            "type": "string"
+          },
+          "recommendation": {
+            "$ref": "#/components/schemas/ScoreRecommendation"
+          },
+          "bureauStatus": {
+            "$ref": "#/components/schemas/BureauStatus"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/ScoreStage"
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "DeclareDividendRequest": {
         "required": [
           "financialYear",
@@ -5367,6 +6170,47 @@
           "Credit"
         ]
       },
+      "FactorScore": {
+        "required": [
+          "key",
+          "label",
+          "value",
+          "points",
+          "maxPoints",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "points": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maxPoints": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
       "FinancialPosition": {
         "required": [
           "segment",
@@ -5654,6 +6498,26 @@
           "Declined",
           "Released"
         ]
+      },
+      "HubTicketResponse": {
+        "required": [
+          "ticket",
+          "expiresAt",
+          "hubPath"
+        ],
+        "type": "object",
+        "properties": {
+          "ticket": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "hubPath": {
+            "type": "string"
+          }
+        }
       },
       "IncomeStatement": {
         "required": [
@@ -6100,7 +6964,8 @@
           "Verified",
           "Rejected",
           "Suspended",
-          "Exited"
+          "Exited",
+          "ExitRequested"
         ]
       },
       "LargeExposure": {
@@ -6320,6 +7185,133 @@
           }
         }
       },
+      "LoanAdjustmentKind": {
+        "enum": [
+          "WriteOff",
+          "Restructure"
+        ]
+      },
+      "LoanAdjustmentResponse": {
+        "required": [
+          "id",
+          "loanId",
+          "loanNumber",
+          "kind",
+          "status",
+          "reason",
+          "requestedByUserId",
+          "requestedAt",
+          "decidedByUserId",
+          "decidedAt",
+          "decisionNotes",
+          "newTermMonths",
+          "newInterestRateBps",
+          "principalWrittenOff",
+          "interestReversed",
+          "journalEntryId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "loanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "loanNumber": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LoanAdjustmentKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LoanAdjustmentStatus"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "decidedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "decisionNotes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "newTermMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "newInterestRateBps": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "principalWrittenOff": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "interestReversed": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "journalEntryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "LoanAdjustmentStatus": {
+        "enum": [
+          "PendingApproval",
+          "Approved",
+          "Rejected"
+        ]
+      },
       "LoanListItem": {
         "required": [
           "id",
@@ -6329,7 +7321,8 @@
           "amount",
           "status",
           "appliedAt",
-          "disbursementDate"
+          "disbursementDate",
+          "creditScore"
         ],
         "type": "object",
         "properties": {
@@ -6368,6 +7361,16 @@
               "string"
             ],
             "format": "date"
+          },
+          "creditScore": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CreditScoreSummary"
+              }
+            ]
           }
         }
       },
@@ -6579,7 +7582,11 @@
           "approvalsRequired",
           "guarantors",
           "approvals",
-          "schedule"
+          "schedule",
+          "creditScore",
+          "bureauConsentAt",
+          "restructureCount",
+          "adjustments"
         ],
         "type": "object",
         "properties": {
@@ -6764,6 +7771,37 @@
             "items": {
               "$ref": "#/components/schemas/InstallmentResponse"
             }
+          },
+          "creditScore": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CreditScoreSummary"
+              }
+            ]
+          },
+          "bureauConsentAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "restructureCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "adjustments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoanAdjustmentResponse"
+            }
           }
         }
       },
@@ -6779,6 +7817,63 @@
           "Cancelled",
           "WrittenOff"
         ]
+      },
+      "MaintenanceRunResult": {
+        "required": [
+          "tenants",
+          "interestAccruals",
+          "bureauDetailsPurged",
+          "errors"
+        ],
+        "type": "object",
+        "properties": {
+          "tenants": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "interestAccruals": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "bureauDetailsPurged": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "MarkAllReadResponse": {
+        "required": [
+          "marked"
+        ],
+        "type": "object",
+        "properties": {
+          "marked": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
       },
       "MemberListItem": {
         "required": [
@@ -6814,6 +7909,114 @@
           "joinedAt": {
             "type": "string",
             "format": "date"
+          }
+        }
+      },
+      "MemberLoanSnapshot": {
+        "required": [
+          "id",
+          "loanNumber",
+          "productCode",
+          "amount",
+          "status",
+          "outstandingPrincipal",
+          "arrearsAmount",
+          "daysInArrears",
+          "nextDueDate",
+          "nextDueAmount",
+          "disbursementDate",
+          "termMonths",
+          "interestRateBps",
+          "appliedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "loanNumber": {
+            "type": "string"
+          },
+          "productCode": {
+            "type": "string"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LoanStatus"
+          },
+          "outstandingPrincipal": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "arrearsAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "daysInArrears": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "nextDueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "nextDueAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "disbursementDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "termMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "interestRateBps": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "appliedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -7009,6 +8212,50 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "NotificationResponse": {
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "body",
+          "link",
+          "createdAt",
+          "readAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "link": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "readAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -7234,6 +8481,47 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/MemberListItem"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfNotificationResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationResponse"
             }
           },
           "page": {
@@ -8390,7 +9678,8 @@
           "MPesa",
           "AirtelMoney",
           "BankTransfer",
-          "CheckOff"
+          "CheckOff",
+          "DepositsOffset"
         ]
       },
       "RepaymentResult": {
@@ -8529,6 +9818,36 @@
         "type": "object",
         "properties": {
           "newPassword": {
+            "type": "string"
+          }
+        }
+      },
+      "RestructureRequest": {
+        "required": [
+          "newTermMonths",
+          "newInterestRateBps",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "newTermMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "newInterestRateBps": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "reason": {
             "type": "string"
           }
         }
@@ -8806,11 +10125,163 @@
           "Closed"
         ]
       },
+      "ScorecardFactorDraft": {
+        "required": [
+          "key",
+          "maxPoints"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "maxPoints": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ScorecardResponse": {
+        "required": [
+          "factors",
+          "totalPoints",
+          "approveThreshold",
+          "referThreshold",
+          "declineIfBureauListed",
+          "source",
+          "updatedAt",
+          "updatedByUserId"
+        ],
+        "type": "object",
+        "properties": {
+          "factors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScorecardFactorDraft"
+            }
+          },
+          "totalPoints": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "approveThreshold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "referThreshold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "declineIfBureauListed": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ScoreRecommendation": {
+        "enum": [
+          "Approve",
+          "Refer",
+          "Decline"
+        ]
+      },
+      "ScoreStage": {
+        "enum": [
+          "Application",
+          "Appraisal",
+          "Manual"
+        ]
+      },
+      "ScoringFactorDefinition": {
+        "required": [
+          "key",
+          "label",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
       "Segment": {
         "enum": [
           "Fosa",
           "Bosa"
         ]
+      },
+      "SelfApplyLoanRequest": {
+        "required": [
+          "productCode",
+          "amount",
+          "termMonths",
+          "purpose",
+          "bureauConsent"
+        ],
+        "type": "object",
+        "properties": {
+          "productCode": {
+            "type": "string"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "termMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "bureauConsent": {
+            "type": "boolean"
+          }
+        }
       },
       "SetProvisioningConfigRequest": {
         "required": [
@@ -8824,6 +10295,49 @@
             "items": {
               "$ref": "#/components/schemas/AgingBucketDraft"
             }
+          },
+          "source": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SetScorecardRequest": {
+        "required": [
+          "factors",
+          "approveThreshold",
+          "referThreshold",
+          "declineIfBureauListed",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "factors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScorecardFactorDraft"
+            }
+          },
+          "approveThreshold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "referThreshold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "declineIfBureauListed": {
+            "type": "boolean"
           },
           "source": {
             "type": [
@@ -9253,6 +10767,22 @@
           "isControlAccount": {
             "type": "boolean",
             "default": false
+          }
+        }
+      },
+      "UnreadCountResponse": {
+        "required": [
+          "unread"
+        ],
+        "type": "object",
+        "properties": {
+          "unread": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -9790,6 +11320,12 @@
       "name": "Loans"
     },
     {
+      "name": "Self-service"
+    },
+    {
+      "name": "Credit scoring"
+    },
+    {
       "name": "Provisioning & NPL aging"
     },
     {
@@ -9800,6 +11336,9 @@
     },
     {
       "name": "Statutory returns"
+    },
+    {
+      "name": "Notifications"
     }
   ]
 }

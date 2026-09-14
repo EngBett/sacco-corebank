@@ -32,6 +32,8 @@ public static class IdentityModule
         services.Replace(ServiceDescriptor.Scoped<IPermissionResolver>(sp => sp.GetRequiredService<PermissionResolver>()));
         services.AddScoped<UserService>();
         services.AddScoped<RoleService>();
+        services.AddScoped<IUserDirectory, UserDirectory>();
+        services.AddScoped<IHubTicketIssuer, HubTicketIssuer>();
         services.AddSingleton<IModuleEndpoints, IdentityAdminEndpoints>();
         services.AddSingleton<IModuleEndpoints, AccountEndpoints>();
 
@@ -43,6 +45,10 @@ public static class IdentityModule
                 o.IssuerUri = settings.IssuerUri;
                 o.EmitStaticAudienceClaim = true;
                 o.Authentication.CookieAuthenticationScheme = IdentityServerConstants.DefaultCookieAuthenticationScheme;
+                // Lax (not the IdentityServer4 default of None): our flows are top-level redirects only, and browsers reject
+                // SameSite=None cookies without Secure, which broke sign-in over plain http in development.
+                o.Authentication.CookieSameSiteMode = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+                o.Authentication.CheckSessionCookieSameSiteMode = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
                 o.UserInteraction.LoginUrl = "/account/login";
                 o.UserInteraction.LogoutUrl = "/account/logout";
                 o.UserInteraction.ErrorUrl = "/account/error";
@@ -94,6 +100,37 @@ public static class IdentityModule
                     using var scope = sp.CreateScope();
                     var store = scope.ServiceProvider.GetRequiredService<IValidationKeysStore>();
                     return store.GetValidationKeysAsync().GetAwaiter().GetResult().Select(k => k.Key).ToList();
+                };
+            });
+
+        // Hub tickets (SignalR): same issuer and keys, different audience, token read from the query string
+        // on hub paths only. Registered as its own scheme so it is never consulted for REST requests.
+        services.AddAuthentication().AddJwtBearer(HubTicketAuth.Scheme, _ => { });
+        services.AddOptions<JwtBearerOptions>(HubTicketAuth.Scheme)
+            .Configure<IServiceProvider>((o, sp) =>
+            {
+                o.Authority = null;
+                o.MapInboundClaims = false;
+                o.TokenValidationParameters.NameClaimType = "name";
+                o.TokenValidationParameters.ValidIssuer = settings.IssuerUri;
+                o.TokenValidationParameters.ValidateIssuer = true;
+                o.TokenValidationParameters.ValidAudience = HubTicketAuth.Audience;
+                o.TokenValidationParameters.ValidateAudience = true;
+                o.TokenValidationParameters.IssuerSigningKeyResolver = (_, _, _, _) =>
+                {
+                    using var scope = sp.CreateScope();
+                    var store = scope.ServiceProvider.GetRequiredService<IValidationKeysStore>();
+                    return store.GetValidationKeysAsync().GetAwaiter().GetResult().Select(k => k.Key).ToList();
+                };
+                o.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = ctx =>
+                    {
+                        var token = ctx.Request.Query["access_token"];
+                        if (!string.IsNullOrEmpty(token) && ctx.HttpContext.Request.Path.StartsWithSegments(HubTicketAuth.PathPrefix))
+                            ctx.Token = token;
+                        return Task.CompletedTask;
+                    },
                 };
             });
 

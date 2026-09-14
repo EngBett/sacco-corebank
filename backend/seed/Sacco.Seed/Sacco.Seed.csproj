@@ -11,6 +11,7 @@
     <ProjectReference Include="../../src/Sacco.Modules.Lending/Sacco.Modules.Lending.csproj" />
     <ProjectReference Include="../../src/Sacco.Modules.Payments/Sacco.Modules.Payments.csproj" />
     <ProjectReference Include="../../src/Sacco.Modules.Reporting/Sacco.Modules.Reporting.csproj" />
+    <ProjectReference Include="../../src/Sacco.Modules.Notifications/Sacco.Modules.Notifications.csproj" />
     <ProjectReference Include="../../src/Sacco.Modules.Identity/Sacco.Modules.Identity.csproj" />
     <ProjectReference Include="../../src/Sacco.Migrations/Sacco.Migrations.csproj" />
   </ItemGroup>

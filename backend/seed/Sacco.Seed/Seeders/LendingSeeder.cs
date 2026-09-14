@@ -16,7 +16,7 @@ namespace Sacco.Seed.Seeders;
 /// awaiting its second committee approval, and a guarantor near her exposure cap. Ends with a
 /// provisioning run awaiting approval.
 /// </summary>
-public sealed class LendingSeeder(LendingDbContext db, LoanService loans, RepaymentService repayments, ProvisioningService provisioning, Sacco.Shared.Savings.ISavingsService savings, IClock clock, ILogger<LendingSeeder> logger) : ISeeder
+public sealed class LendingSeeder(LendingDbContext db, LoanService loans, RepaymentService repayments, ProvisioningService provisioning, CreditScoringService scoring, Sacco.Shared.Savings.ISavingsService savings, IClock clock, ILogger<LendingSeeder> logger) : ISeeder
 {
     public int Order => 30;
 
@@ -28,6 +28,7 @@ public sealed class LendingSeeder(LendingDbContext db, LoanService loans, Repaym
     {
         await SeedProductsAsync(ct);
         await SeedProvisioningConfigAsync(ct);
+        await SeedScorecardAsync(ct);
         if (await db.Loans.AnyAsync(ct)) { logger.LogInformation("  Loans already seeded"); return; }
 
         var today = clock.Today;
@@ -63,7 +64,8 @@ public sealed class LendingSeeder(LendingDbContext db, LoanService loans, Repaym
             for (var i = 1; i <= Math.Min(paid, term); i++)
             {
                 var inst = loan.Schedule.OrderBy(s => s.Number).ElementAt(i - 1);
-                await repayments.RepayAsync(new RepaymentCommand(loan.LoanNumber, inst.PrincipalDue + inst.InterestDue, RepaymentChannel.CheckOff, $"SEED-REPAY:{loan.LoanNumber}:{i}", "Check-off remittance", DemoTenant.Users.Teller), ct);
+                // Paid on the due date, so the repayment-history factor sees an on-time record.
+                await repayments.RepayAsync(new RepaymentCommand(loan.LoanNumber, inst.PrincipalDue + inst.InterestDue, RepaymentChannel.CheckOff, $"SEED-REPAY:{loan.LoanNumber}:{i}", "Check-off remittance", DemoTenant.Users.Teller, inst.DueDate <= today ? inst.DueDate : today), ct);
             }
             created++;
         }
@@ -159,6 +161,13 @@ public sealed class LendingSeeder(LendingDbContext db, LoanService loans, Repaym
         }
         await db.SaveChangesAsync(ct);
         logger.Created("Loan products", created);
+    }
+
+    private async Task SeedScorecardAsync(CancellationToken ct)
+    {
+        if (await db.Scorecards.AnyAsync(ct)) return;
+        await scoring.SetScorecardAsync(Scorecard.DefaultFactors, 70, 50, true, "Demo SACCO credit policy v1 — platform default weights; review with the credit committee", DemoTenant.Users.System, ct);
+        logger.Created("Credit scorecard", 1);
     }
 
     private async Task SeedProvisioningConfigAsync(CancellationToken ct)

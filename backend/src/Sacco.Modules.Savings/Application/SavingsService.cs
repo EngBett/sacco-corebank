@@ -3,6 +3,8 @@ using Microsoft.Extensions.Options;
 using Sacco.Modules.Savings.Domain;
 using Sacco.Modules.Savings.Persistence;
 using Sacco.Shared.Audit;
+using Sacco.Shared.Auth;
+using Sacco.Shared.Notifications;
 using Sacco.Shared.Domain;
 using Sacco.Shared.Ledger;
 using Sacco.Shared.Members;
@@ -12,7 +14,7 @@ using Sacco.Shared.Time;
 
 namespace Sacco.Modules.Savings.Application;
 
-public sealed class SavingsService(SavingsDbContext db, ILedgerService ledger, IMemberDirectory members, ITenantContext tenant, IClock clock, IAuditLogger audit, IOptions<SavingsSettings> options) : ISavingsService
+public sealed class SavingsService(SavingsDbContext db, ILedgerService ledger, IMemberDirectory members, ITenantContext tenant, IClock clock, IAuditLogger audit, IOptions<SavingsSettings> options, INotifier notifier) : ISavingsService
 {
     private SavingsSettings Settings => options.Value;
 
@@ -148,6 +150,8 @@ public sealed class SavingsService(SavingsDbContext db, ILedgerService ledger, I
         db.Withdrawals.Add(request);
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("savings.withdrawal.requested", nameof(WithdrawalRequest), request.Id.ToString(), byUser, $$"""{"account":"{{accountNumber}}","amount":{{amount}},"channel":"{{channel}}","noticeExpires":"{{request.NoticeExpiresOn:yyyy-MM-dd}}"}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("savings.withdrawal.pending", $"Withdrawal of KES {amount:N2} from {accountNumber} awaits approval",
+            $"{channel} payout · notice period ends {request.NoticeExpiresOn:d MMM yyyy}", "/savings/withdrawals", NotificationAudience.HoldersOf(Permissions.Savings.WithdrawalApprove), byUser), ct);
         return request;
     }
 
@@ -157,6 +161,8 @@ public sealed class SavingsService(SavingsDbContext db, ILedgerService ledger, I
         request.Approve(byUser, clock.UtcNow);
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("savings.withdrawal.approved", nameof(WithdrawalRequest), id.ToString(), byUser, $$"""{"requestedBy":"{{request.RequestedByUserId}}","amount":{{request.Amount}}}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("savings.withdrawal.approved", $"Withdrawal from {request.AccountNumber} approved",
+            $"KES {request.Amount:N2} via {request.Channel}; payable from {request.NoticeExpiresOn:d MMM yyyy}", "/savings/withdrawals", NotificationAudience.User(request.RequestedByUserId), byUser), ct);
         return request;
     }
 
@@ -167,6 +173,8 @@ public sealed class SavingsService(SavingsDbContext db, ILedgerService ledger, I
         await ledger.ReleaseHoldAsync(request.AccountNumber, request.TotalDebit, $"Withdrawal {id} rejected", ct);
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("savings.withdrawal.rejected", nameof(WithdrawalRequest), id.ToString(), byUser, $$"""{"reason":"{{reason.Replace("\"", "'")}}"}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("savings.withdrawal.rejected", $"Withdrawal from {request.AccountNumber} rejected",
+            reason, "/savings/withdrawals", NotificationAudience.User(request.RequestedByUserId), byUser), ct);
         return request;
     }
 
@@ -195,6 +203,8 @@ public sealed class SavingsService(SavingsDbContext db, ILedgerService ledger, I
         }
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("savings.withdrawal.paid", nameof(WithdrawalRequest), id.ToString(), byUser, $$"""{"account":"{{request.AccountNumber}}","amount":{{request.Amount}},"channel":"{{request.Channel}}"}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("savings.withdrawal.paid", $"Withdrawal from {request.AccountNumber} paid",
+            $"KES {request.Amount:N2} paid out via {request.Channel}", "/savings/withdrawals", NotificationAudience.User(request.RequestedByUserId), byUser), ct);
         return request;
     }
 
@@ -245,12 +255,48 @@ public sealed class SavingsService(SavingsDbContext db, ILedgerService ledger, I
         }
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("savings.withdrawal.paid_by_provider", nameof(WithdrawalRequest), withdrawalId.ToString(), byUserId, $$"""{"channel":"{{request.Channel}}","providerReference":"{{providerReference}}","amount":{{request.Amount}}}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("savings.withdrawal.paid", $"Withdrawal from {request.AccountNumber} paid by {request.Channel}",
+            $"KES {request.Amount:N2} · provider reference {providerReference}", "/savings/withdrawals", NotificationAudience.Users(request.RequestedByUserId, request.ApprovedByUserId ?? Guid.Empty), byUserId), ct);
     }
 
     public async Task FailWithdrawalPayoutAsync(Guid withdrawalId, string reason, CancellationToken ct)
     {
         var request = await db.Withdrawals.FirstOrDefaultAsync(w => w.Id == withdrawalId, ct) ?? throw new NotFoundException("Withdrawal", withdrawalId);
         await audit.RecordAsync(new AuditEvent("savings.withdrawal.payout_failed", nameof(WithdrawalRequest), withdrawalId.ToString(), request.ApprovedByUserId ?? request.RequestedByUserId, "{\"reason\":\"" + reason.Replace("\"", "'") + "\",\"status\":\"" + request.Status + "\"}"), ct);
+        await notifier.NotifyAsync(new NotificationRequest("savings.withdrawal.payout_failed", $"Payout for withdrawal from {request.AccountNumber} failed",
+            reason, "/savings/withdrawals", NotificationAudience.Users(request.RequestedByUserId, request.ApprovedByUserId ?? Guid.Empty), SystemActors.System), ct);
+    }
+
+    // ---------- Member exit ----------
+
+    public async Task<ExitPayoutResult> CloseAccountsOnExitAsync(Guid memberId, ExitPayoutChannel channel, Guid byUserId, CancellationToken ct)
+    {
+        var (settlementGl, settlementSegment) = channel == ExitPayoutChannel.Cash ? (Settings.TellerCashGl, Segment.Fosa) : (Settings.FosaBankGl, Segment.Fosa);
+        var accounts = await db.Accounts.Where(a => a.MemberId == memberId && a.Status != SavingsAccountStatus.Closed).ToListAsync(ct);
+        var products = await db.Products.AsNoTracking().ToDictionaryAsync(p => p.Id, ct);
+        var payouts = new List<ExitAccountPayout>();
+        foreach (var account in accounts)
+        {
+            var snapshot = await ledger.FindAccountAsync(account.AccountNumber, ct);
+            if (snapshot is not null && snapshot.HeldAmount > 0)
+                throw new DomainRuleException("savings.exit.holds_outstanding", $"{account.AccountNumber} still has KES {snapshot.HeldAmount:N2} on hold (guarantees or pending withdrawals); release them first.");
+            string? reference = null;
+            var balance = snapshot?.Balance ?? 0m;
+            if (balance > 0)
+            {
+                var product = products[account.ProductId];
+                reference = $"EXIT:{account.AccountNumber}";
+                var lines = PostingBuilder.Outflow(Settings, settlementGl, settlementSegment, product.ControlGlAccountCode, account.AccountNumber, account.Segment, balance, 0m, null, $"Exit payout {account.AccountNumber}");
+                await ledger.PostAsync(new PostingRequest(reference, $"Member exit payout — {account.AccountNumber}", clock.Today, "Savings", byUserId, lines), ct);
+            }
+            if (snapshot is not null && snapshot.Status != LedgerAccountStatus.Closed)
+                await ledger.SetAccountStatusAsync(account.AccountNumber, LedgerAccountStatus.Closed, byUserId, ct);
+            account.Close(clock.UtcNow);
+            payouts.Add(new ExitAccountPayout(account.AccountNumber, account.Kind, balance, reference));
+        }
+        await db.SaveChangesAsync(ct);
+        await audit.RecordAsync(new AuditEvent("savings.accounts.closed_on_exit", nameof(SavingsAccount), memberId.ToString(), byUserId, $$"""{"accounts":{{payouts.Count}},"paid":{{payouts.Sum(p => p.Amount)}},"channel":"{{channel}}"}"""), ct);
+        return new ExitPayoutResult(payouts, payouts.Sum(p => p.Amount));
     }
 
     // ---------- Queries for other modules ----------

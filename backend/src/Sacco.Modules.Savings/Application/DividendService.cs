@@ -24,7 +24,11 @@ public sealed class DividendService(SavingsDbContext db, ILedgerService ledger, 
         if (await db.Dividends.AnyAsync(d => d.FinancialYear == financialYear && d.Status != DividendStatus.Rejected, ct))
             throw new ConflictException("savings.dividend.exists", $"A dividend declaration for FY{financialYear} already exists.");
 
-        // Closing balances per member, from the ledger. (Skeleton: closing balance × rate; pro-rata by month is a later refinement.)
+        // Pro-rata by time: each member's basis is the average daily balance over the financial year, read from the
+        // ledger statement, so a deposit made in December earns a twelfth of one made in January.
+        var yearStart = new DateOnly(financialYear, 1, 1);
+        var yearEnd = new DateOnly(financialYear, 12, 31);
+        if (yearEnd >= clock.Today) throw new DomainRuleException("savings.dividend.year_open", $"FY{financialYear} has not ended; dividends are declared after year end.");
         var accounts = await db.Accounts.AsNoTracking().Where(a => a.Status == SavingsAccountStatus.Active).ToListAsync(ct);
         var drafts = new List<DividendLineDraft>();
         foreach (var group in accounts.GroupBy(a => a.MemberId))
@@ -32,8 +36,8 @@ public sealed class DividendService(SavingsDbContext db, ILedgerService ledger, 
             var shares = group.FirstOrDefault(a => a.Kind == ProductKind.Shares);
             var deposits = group.FirstOrDefault(a => a.Kind == ProductKind.BosaDeposit);
             var fosa = group.FirstOrDefault(a => a.Kind == ProductKind.FosaCurrent);
-            var shareBalance = shares is null ? 0m : (await ledger.FindAccountAsync(shares.AccountNumber, ct))?.Balance ?? 0m;
-            var depositBalance = deposits is null ? 0m : (await ledger.FindAccountAsync(deposits.AccountNumber, ct))?.Balance ?? 0m;
+            var shareBalance = shares is null ? 0m : await AverageDailyBalanceAsync(shares.AccountNumber, yearStart, yearEnd, ct);
+            var depositBalance = deposits is null ? 0m : await AverageDailyBalanceAsync(deposits.AccountNumber, yearStart, yearEnd, ct);
             drafts.Add(new DividendLineDraft(group.Key, shares?.AccountNumber, shareBalance, deposits?.AccountNumber, depositBalance, fosa?.AccountNumber));
         }
 
@@ -43,6 +47,29 @@ public sealed class DividendService(SavingsDbContext db, ILedgerService ledger, 
         await audit.RecordAsync(new AuditEvent("savings.dividend.declared", nameof(DividendDeclaration), declaration.Id.ToString(), byUser,
             $$"""{"year":{{financialYear}},"shareRateBps":{{shareRateBps}},"depositRateBps":{{depositRateBps}},"totalShareDividend":{{declaration.TotalShareDividend}},"totalDepositInterest":{{declaration.TotalDepositInterest}}}"""), ct);
         return declaration;
+    }
+
+    /// <summary>Time-weighted average of the ledger balance over [from, to], from the account statement.</summary>
+    public async Task<decimal> AverageDailyBalanceAsync(string accountNumber, DateOnly from, DateOnly to, CancellationToken ct)
+    {
+        var statement = await ledger.GetStatementAsync(accountNumber, from, to, ct);
+        return statement is null ? 0m : AverageDailyBalance(statement.OpeningBalance, statement.Lines.Select(l => (l.ValueDate, l.RunningBalance)), from, to);
+    }
+
+    public static decimal AverageDailyBalance(decimal openingBalance, IEnumerable<(DateOnly Date, decimal RunningBalance)> movements, DateOnly from, DateOnly to)
+    {
+        var days = to.DayNumber - from.DayNumber + 1;
+        if (days <= 0) return 0m;
+        decimal weighted = 0, balance = openingBalance;
+        var cursor = from;
+        foreach (var group in movements.Where(m => m.Date >= from && m.Date <= to).GroupBy(m => m.Date).OrderBy(g => g.Key))
+        {
+            weighted += balance * (group.Key.DayNumber - cursor.DayNumber);
+            balance = group.Last().RunningBalance;
+            cursor = group.Key;
+        }
+        weighted += balance * (to.DayNumber - cursor.DayNumber + 1);
+        return decimal.Round(weighted / days, 2, MidpointRounding.ToEven);
     }
 
     public async Task<DividendDeclaration> GetAsync(Guid id, CancellationToken ct)

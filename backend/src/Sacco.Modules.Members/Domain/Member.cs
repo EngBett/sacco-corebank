@@ -79,6 +79,12 @@ public class Member : TenantEntity
     public string? SuspensionReason { get; private set; }
     public DateTimeOffset? SuspendedAt { get; private set; }
     public DateTimeOffset? ExitedAt { get; private set; }
+    public Guid? ExitRequestedByUserId { get; private set; }
+    public DateTimeOffset? ExitRequestedAt { get; private set; }
+    public string? ExitReason { get; private set; }
+    public Guid? ExitApprovedByUserId { get; private set; }
+    /// <summary>JSON summary of what was settled and paid out when the member left.</summary>
+    public string? ExitSettlementJson { get; private set; }
     public IReadOnlyList<KycDocument> Documents => _documents;
 
     public static Member Register(Guid id, Guid tenantId, string memberNumber, PersonalDetails details, NextOfKin nextOfKin, MemberSource source, Guid? applicationId, Guid registeredBy, DateOnly today, DateTimeOffset now, DateOnly? joinedAt = null)
@@ -146,11 +152,30 @@ public class Member : TenantEntity
         KycStatus = KycStatus.Verified; SuspensionReason = null; SuspendedAt = null;
     }
 
-    /// <summary>Marks the member as exited. The Savings module is responsible for settling balances first (Phase 3).</summary>
-    public void Exit(DateTimeOffset now)
+    /// <summary>Maker: records the exit request. Lending is blocked while an exit is pending; savings continue until approval.</summary>
+    public void RequestExit(Guid by, string reason, DateTimeOffset now)
+    {
+        if (KycStatus is not (KycStatus.Verified or KycStatus.Suspended)) throw new DomainRuleException("members.exit.not_eligible", $"{MemberNumber} is {KycStatus}; only verified or suspended members can exit.");
+        if (string.IsNullOrWhiteSpace(reason)) throw new DomainRuleException("members.exit.reason_required", "An exit reason is required.");
+        KycStatus = KycStatus.ExitRequested; ExitRequestedByUserId = by; ExitRequestedAt = now; ExitReason = reason.Trim();
+    }
+
+    public void CancelExitRequest(Guid by, string reason)
+    {
+        if (KycStatus != KycStatus.ExitRequested) throw new DomainRuleException("members.exit.not_requested", $"{MemberNumber} has no pending exit request.");
+        MakerChecker.EnsureDistinct(ExitRequestedByUserId ?? Guid.Empty, by, $"exit of {MemberNumber}");
+        if (string.IsNullOrWhiteSpace(reason)) throw new DomainRuleException("members.exit.reason_required", "A reason is required.");
+        KycStatus = SuspensionReason is null ? KycStatus.Verified : KycStatus.Suspended;
+        ExitRequestedByUserId = null; ExitRequestedAt = null; ExitReason = null;
+    }
+
+    /// <summary>Checker: the member leaves. The caller has already settled loans and paid out balances; the summary is kept for the record.</summary>
+    public void Exit(Guid approvedBy, string settlementJson, DateTimeOffset now)
     {
         if (KycStatus is KycStatus.Exited) throw new DomainRuleException("members.exited", $"{MemberNumber} has already exited.");
-        KycStatus = KycStatus.Exited; ExitedAt = now;
+        if (KycStatus != KycStatus.ExitRequested) throw new DomainRuleException("members.exit.not_requested", $"{MemberNumber} has no pending exit request.");
+        MakerChecker.EnsureDistinct(ExitRequestedByUserId ?? Guid.Empty, approvedBy, $"exit of {MemberNumber}");
+        KycStatus = KycStatus.Exited; ExitedAt = now; ExitApprovedByUserId = approvedBy; ExitSettlementJson = settlementJson;
     }
 
     public bool IsInGoodStanding => KycStatus == KycStatus.Verified;

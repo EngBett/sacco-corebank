@@ -11,6 +11,8 @@ using Sacco.Modules.Lending;
 using Sacco.Modules.Lending.Persistence;
 using Sacco.Modules.Ledger.Persistence;
 using Sacco.Modules.Members;
+using Sacco.Modules.Notifications;
+using Sacco.Modules.Notifications.Persistence;
 using Sacco.Modules.Payments;
 using Sacco.Modules.Payments.Persistence;
 using Wolverine;
@@ -56,7 +58,14 @@ builder.Services.AddHealthChecks()
     .AddDbContextCheck<SavingsDbContext>("savings-db")
     .AddDbContextCheck<LendingDbContext>("lending-db")
     .AddDbContextCheck<PaymentsDbContext>("payments-db")
-    .AddDbContextCheck<ReportingDbContext>("reporting-db");
+    .AddDbContextCheck<ReportingDbContext>("reporting-db")
+    .AddDbContextCheck<NotificationsDbContext>("notifications-db");
+
+// The portal's browser code talks to the API directly for one thing only: the notifications hub (SignalR).
+// Everything else goes through the BFF, so this is the only cross-origin surface.
+const string PortalCorsPolicy = "portal";
+var portalOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+builder.Services.AddCors(o => o.AddPolicy(PortalCorsPolicy, p => p.WithOrigins(portalOrigins).SetIsOriginAllowedToAllowWildcardSubdomains().AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
 builder.Services.AddRateLimiter(o =>
 {
@@ -85,6 +94,8 @@ builder.Services.AddSavingsModule(builder.Configuration, connectionString);
 builder.Services.AddLendingModule(builder.Configuration, connectionString);
 builder.Services.AddPaymentsModule(builder.Configuration, connectionString);
 builder.Services.AddReportingModule(builder.Configuration, connectionString);
+builder.Services.AddNotificationsModule(connectionString).AddNotificationsRealtime(PortalCorsPolicy);
+builder.Services.AddLendingScheduler(); // daily interest accrual + bureau retention purge (Lending:Maintenance)
 
 // Messaging & sagas: Wolverine (MIT), scoped to payment-provider orchestration (ADR 0003).
 builder.Host.UseWolverine(opts => PaymentsModule.ConfigureWolverine(opts, connectionString, builder.Environment));
@@ -105,6 +116,7 @@ if (app.Configuration.GetValue("Database:MigrateOnStartup", false) && !PaymentsM
     await scope.ServiceProvider.GetRequiredService<LendingDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<PaymentsDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<ReportingDbContext>().Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<NotificationsDbContext>().Database.MigrateAsync();
 }
 
 app.MapOpenApi();
@@ -117,6 +129,7 @@ if (app.Environment.IsProduction() && app.Configuration.GetSection("Payments:Web
     app.Logger.LogWarning("Payments:WebhookAllowedCidrs is empty: provider webhooks accept callbacks from any source IP. Restrict to the providers' published ranges before go-live.");
 
 app.UseRateLimiter();
+app.UseCors();
 app.UseSaccoIdentityServer();   // /connect/*, /.well-known/*; also registers authentication middleware
 app.UseAuthentication();
 app.UseTenantResolution();      // after authentication so the token's tenant claim participates

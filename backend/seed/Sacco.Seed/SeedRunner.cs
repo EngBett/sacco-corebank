@@ -8,6 +8,8 @@ using Sacco.Modules.Identity.Persistence;
 using Sacco.Modules.Ledger;
 using Sacco.Modules.Members;
 using Sacco.Modules.Members.Persistence;
+using Sacco.Modules.Notifications;
+using Sacco.Modules.Notifications.Persistence;
 using Sacco.Modules.Savings;
 using Sacco.Modules.Savings.Persistence;
 using Sacco.Modules.Lending;
@@ -60,6 +62,7 @@ public static class SeedRunner
         services.AddLendingModule(config, connectionString);
         services.AddPaymentsModule(config, connectionString);
         services.AddReportingModule(config, connectionString);
+        services.AddNotificationsModule(connectionString); // no realtime pusher: nobody is connected during seeding
         services.AddSingleton<Wolverine.IMessageBus, SeedMessageBusStub>();
 
         services.AddScoped<ISeeder, TenantSeeder>();
@@ -72,6 +75,7 @@ public static class SeedRunner
         services.AddScoped<ISeeder, LendingSeeder>();
         services.AddScoped<ISeeder, PaymentsSeeder>();
         services.AddScoped<ISeeder, ReportingSeeder>();
+        services.AddScoped<ISeeder, NotificationsSeeder>();
 
         await using var provider = services.BuildServiceProvider();
 
@@ -88,6 +92,7 @@ public static class SeedRunner
             await scope.ServiceProvider.GetRequiredService<LendingDbContext>().Database.MigrateAsync(ct);
             await scope.ServiceProvider.GetRequiredService<PaymentsDbContext>().Database.MigrateAsync(ct);
             await scope.ServiceProvider.GetRequiredService<ReportingDbContext>().Database.MigrateAsync(ct);
+            await scope.ServiceProvider.GetRequiredService<NotificationsDbContext>().Database.MigrateAsync(ct);
         }
 
         using (var scope = provider.CreateScope())

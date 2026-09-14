@@ -15,6 +15,9 @@ public class LendingDbContext(DbContextOptions<LendingDbContext> options, ITenan
     public DbSet<ProvisioningConfig> ProvisioningConfigs => Set<ProvisioningConfig>();
     public DbSet<ProvisioningRun> ProvisioningRuns => Set<ProvisioningRun>();
     public DbSet<LoanNumberSequence> Sequences => Set<LoanNumberSequence>();
+    public DbSet<Scorecard> Scorecards => Set<Scorecard>();
+    public DbSet<LoanCreditScore> CreditScores => Set<LoanCreditScore>();
+    public DbSet<LoanAdjustment> Adjustments => Set<LoanAdjustment>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -54,6 +57,7 @@ public class LendingDbContext(DbContextOptions<LendingDbContext> options, ITenan
             b.Property(l => l.Segment).HasConversion<int>();
             b.Property(l => l.InterestMethod).HasConversion<int>();
             b.Property(l => l.Status).HasConversion<int>();
+            b.Property(l => l.BureauConsentText).HasMaxLength(600);
             b.OwnsOne(l => l.Eligibility, e =>
             {
                 foreach (var m in new[] { nameof(EligibilitySnapshot.BosaDeposits), nameof(EligibilitySnapshot.Shares), nameof(EligibilitySnapshot.MaxEligibleAmount), nameof(EligibilitySnapshot.ExistingOutstanding) }) e.Property(m).HasColumnType(money);
@@ -99,6 +103,52 @@ public class LendingDbContext(DbContextOptions<LendingDbContext> options, ITenan
             b.Property(i => i.Status).HasConversion<int>();
             b.Ignore(i => i.TotalDue);
             b.Ignore(i => i.Outstanding);
+        });
+
+        mb.Entity<LoanAdjustment>(b =>
+        {
+            b.ToTable("loan_adjustments");
+            b.HasKey(a => a.Id);
+            b.HasIndex(a => new { a.LoanId, a.Status });
+            b.Property(a => a.LoanNumber).HasMaxLength(20).IsRequired();
+            b.Property(a => a.Reason).HasMaxLength(500).IsRequired();
+            b.Property(a => a.DecisionNotes).HasMaxLength(500);
+            b.Property(a => a.Kind).HasConversion<int>();
+            b.Property(a => a.Status).HasConversion<int>();
+        });
+
+        mb.Entity<Scorecard>(b =>
+        {
+            b.ToTable("scorecards");
+            b.HasKey(c => c.Id);
+            b.HasIndex(c => c.TenantId).IsUnique();
+            b.Property(c => c.Source).HasMaxLength(300);
+            b.Ignore(c => c.TotalPoints);
+            b.HasMany(c => c.Factors).WithOne().HasForeignKey(f => f.ScorecardId).OnDelete(DeleteBehavior.Cascade);
+            b.Navigation(c => c.Factors).AutoInclude();
+        });
+
+        mb.Entity<ScorecardFactor>(b =>
+        {
+            b.ToTable("scorecard_factors");
+            b.HasKey(f => f.Id);
+            b.Property(f => f.Key).HasMaxLength(50).IsRequired();
+            b.HasIndex(f => new { f.ScorecardId, f.Key }).IsUnique();
+        });
+
+        mb.Entity<LoanCreditScore>(b =>
+        {
+            b.ToTable("loan_credit_scores");
+            b.HasKey(s => s.Id);
+            b.HasIndex(s => new { s.LoanId, s.ComputedAt });
+            b.Property(s => s.Grade).HasMaxLength(2).IsRequired();
+            b.Property(s => s.RecommendationReason).HasMaxLength(500).IsRequired();
+            b.Property(s => s.BureauReference).HasMaxLength(100);
+            b.Property(s => s.BureauNarrative).HasMaxLength(500);
+            b.Property(s => s.FactorsJson).HasColumnType("jsonb").IsRequired();
+            b.Property(s => s.Stage).HasConversion<int>();
+            b.Property(s => s.Recommendation).HasConversion<int>();
+            b.Property(s => s.BureauStatus).HasConversion<int>();
         });
 
         mb.Entity<ProvisioningConfig>(b =>

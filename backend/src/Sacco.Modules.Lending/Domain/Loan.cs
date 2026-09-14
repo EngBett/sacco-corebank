@@ -62,6 +62,10 @@ public class Loan : TenantEntity
     public decimal ProcessingFee { get; private set; }
     public DateTimeOffset? ClosedAt { get; private set; }
     public string? RejectionReason { get; private set; }
+    /// <summary>When the member consented to a credit bureau check for this application, and the wording they saw.</summary>
+    public DateTimeOffset? BureauConsentAt { get; private set; }
+    public string? BureauConsentText { get; private set; }
+    public int RestructureCount { get; private set; }
     public IReadOnlyList<LoanGuarantor> Guarantors => _guarantors;
     public IReadOnlyList<LoanApproval> Approvals => _approvals;
     public IReadOnlyList<RepaymentInstallment> Schedule => _schedule;
@@ -159,6 +163,46 @@ public class Loan : TenantEntity
     }
 
     public void PledgeDeposits(string account, decimal amount) { PledgedDepositsAccountNumber = account; PledgedDepositsAmount = amount; }
+    public void ClearPledge() { PledgedDepositsAccountNumber = null; PledgedDepositsAmount = 0; }
+
+    public void RecordBureauConsent(DateTimeOffset now, string text) { BureauConsentAt = now; BureauConsentText = text; }
+
+    /// <summary>Write-off: the balance sheet movement is the caller's; here the contract ends and guarantees are released.</summary>
+    public void WriteOff(DateTimeOffset now)
+    {
+        if (Status != LoanStatus.Active) throw new DomainRuleException("loans.not_active", $"Loan {LoanNumber} is {Status}.");
+        Status = LoanStatus.WrittenOff; ClosedAt = now;
+        foreach (var g in _guarantors.Where(g => g.Status == GuarantorStatus.Accepted)) g.Release();
+        ClearPledge();
+    }
+
+    /// <summary>Replaces the schedule with a new one over <paramref name="outstandingPrincipal"/>; interest already due but unpaid is carried into the first instalment. Returns the new rows for the caller to register as Added.</summary>
+    public IReadOnlyList<RepaymentInstallment> Restructure(decimal outstandingPrincipal, int newTermMonths, int newRateBps, decimal carriedInterest, DateOnly start, DateTimeOffset now)
+    {
+        if (Status != LoanStatus.Active) throw new DomainRuleException("loans.not_active", $"Loan {LoanNumber} is {Status}.");
+        if (outstandingPrincipal <= 0) throw new DomainRuleException("loans.restructure.nothing_outstanding", "There is no outstanding principal to restructure.");
+        TermMonths = newTermMonths; InterestRateBps = newRateBps; RestructureCount++;
+        _schedule.Clear();
+        var fresh = BuildSchedule(Id, outstandingPrincipal, newRateBps, newTermMonths, InterestMethod, start);
+        if (carriedInterest > 0) fresh[0].CarryInterest(carriedInterest);
+        _schedule.AddRange(fresh);
+        _ = now;
+        return fresh;
+    }
+
+    /// <summary>Settles the loan in full: all outstanding principal plus interest due on or before <paramref name="asOf"/>; interest on later instalments is waived. Returns the (interest, principal, accruedInterestPaid) split.</summary>
+    public (decimal Interest, decimal Principal, decimal AccruedInterestPaid) Payoff(DateOnly asOf, DateTimeOffset now)
+    {
+        if (Status != LoanStatus.Active) throw new DomainRuleException("loans.not_active", $"Loan {LoanNumber} is {Status}.");
+        decimal interest = 0, principal = 0, accrued = 0;
+        foreach (var inst in _schedule.Where(i => i.Status != InstallmentStatus.Paid).OrderBy(i => i.Number))
+        {
+            if (inst.DueDate > asOf) inst.WaiveInterest();
+            var (i, p, a) = inst.Apply(inst.Outstanding, now);
+            interest += i; principal += p; accrued += a;
+        }
+        return (interest, principal, accrued);
+    }
 
     // ---- Disbursement & schedule ----
 
@@ -212,7 +256,7 @@ public class Loan : TenantEntity
     }
 
     /// <summary>Allocates a repayment across instalments in order: interest first, then principal. Returns the (interest, principal) split.</summary>
-    public (decimal Interest, decimal Principal, decimal AccruedInterestPaid) AllocateRepayment(decimal amount)
+    public (decimal Interest, decimal Principal, decimal AccruedInterestPaid) AllocateRepayment(decimal amount, DateTimeOffset now)
     {
         if (Status != LoanStatus.Active) throw new DomainRuleException("loans.not_active", $"Loan {LoanNumber} is {Status}.");
         if (amount <= 0 || decimal.Round(amount, 2) != amount) throw new DomainRuleException("loans.repayment_amount", "Repayment must be a positive amount with at most two decimals.");
@@ -220,7 +264,7 @@ public class Loan : TenantEntity
         foreach (var inst in _schedule.Where(i => i.Status != InstallmentStatus.Paid).OrderBy(i => i.Number))
         {
             if (remaining <= 0) break;
-            var (i, p, accrued) = inst.Apply(remaining);
+            var (i, p, accrued) = inst.Apply(remaining, now);
             interest += i; principal += p; accruedPaid += accrued; remaining -= i + p;
         }
         if (remaining > 0)
@@ -323,16 +367,22 @@ public class RepaymentInstallment
     internal void MarkAccrued() => InterestAccrued = true;
 
     /// <summary>Applies an amount: interest outstanding first, then principal. Returns (interestApplied, principalApplied, interestAppliedThatWasAlreadyAccrued).</summary>
-    internal (decimal Interest, decimal Principal, decimal Accrued) Apply(decimal amount)
+    internal (decimal Interest, decimal Principal, decimal Accrued) Apply(decimal amount, DateTimeOffset now)
     {
         var interestOutstanding = InterestDue - InterestPaid;
         var i = Math.Min(amount, interestOutstanding);
         var p = Math.Min(amount - i, PrincipalDue - PrincipalPaid);
         InterestPaid += i; PrincipalPaid += p;
         Status = Outstanding <= 0 ? InstallmentStatus.Paid : (PrincipalPaid + InterestPaid > 0 ? InstallmentStatus.PartiallyPaid : InstallmentStatus.Pending);
-        if (Status == InstallmentStatus.Paid) PaidAt = DateTimeOffset.UtcNow;
+        if (Status == InstallmentStatus.Paid) PaidAt ??= now;
         return (i, p, InterestAccrued ? i : 0m);
     }
 
     internal void ApplyExtraPrincipal(decimal amount) { PrincipalDue += amount; PrincipalPaid += amount; }
+    internal void CarryInterest(decimal amount) => InterestDue += amount;
+    /// <summary>Early settlement: interest not yet due is forgiven.</summary>
+    internal void WaiveInterest() => InterestDue = InterestPaid;
+
+    /// <summary>Days late this instalment was settled (0 when paid on time or still open).</summary>
+    public int DaysLate(int graceDays) => PaidAt is null ? 0 : Math.Max(0, DateOnly.FromDateTime(PaidAt.Value.UtcDateTime).DayNumber - DueDate.DayNumber - graceDays);
 }

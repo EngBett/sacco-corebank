@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Sacco.Modules.Lending.Domain;
 using Sacco.Modules.Lending.Persistence;
 using Sacco.Shared.Audit;
+using Sacco.Shared.Auth;
+using Sacco.Shared.Notifications;
 using Sacco.Shared.Domain;
 using Sacco.Shared.Ledger;
 using Sacco.Shared.Lending;
@@ -15,7 +17,7 @@ public sealed record AgingBucketTotal(string Bucket, int ProvisionRateBps, int L
 public sealed record AgingReport(DateOnly AsOf, IReadOnlyList<AgingRow> Loans, IReadOnlyList<AgingBucketTotal> Buckets, decimal TotalOutstanding, decimal TotalProvisionRequired, decimal NonPerformingOutstanding);
 
 /// <summary>NPL aging and provisioning. Rates/buckets come from <see cref="ProvisioningConfig"/>; posting the provision movement is maker-checker.</summary>
-public sealed class ProvisioningService(LendingDbContext db, ILedgerService ledger, ITenantContext tenant, IClock clock, IAuditLogger audit)
+public sealed class ProvisioningService(LendingDbContext db, ILedgerService ledger, ITenantContext tenant, IClock clock, IAuditLogger audit, INotifier notifier)
 {
     public async Task<ProvisioningConfig> GetConfigAsync(CancellationToken ct)
         => await db.ProvisioningConfigs.FirstOrDefaultAsync(ct) ?? throw new DomainRuleException("loans.provisioning.not_configured", "Provisioning buckets have not been configured for this SACCO.");
@@ -82,6 +84,8 @@ public sealed class ProvisioningService(LendingDbContext db, ILedgerService ledg
         db.ProvisioningRuns.Add(run);
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("loans.provisioning.computed", nameof(ProvisioningRun), run.Id.ToString(), byUser, $$"""{"asOf":"{{asOf:yyyy-MM-dd}}","required":{{run.TotalProvisionRequired}}}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("loans.provisioning.pending", $"Provisioning run as of {asOf:d MMM yyyy} awaits approval",
+            $"Provision required KES {run.TotalProvisionRequired:N2} on KES {run.TotalOutstanding:N2} outstanding", "/loans/provisioning", NotificationAudience.HoldersOf(Permissions.Loans.ProvisioningManage), byUser), ct);
         return run;
     }
 
@@ -108,6 +112,8 @@ public sealed class ProvisioningService(LendingDbContext db, ILedgerService ledg
         }
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("loans.provisioning.posted", nameof(ProvisioningRun), run.Id.ToString(), byUser, $$"""{"computedBy":"{{run.ComputedByUserId}}","required":{{run.TotalProvisionRequired}}}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("loans.provisioning.posted", $"Provisioning run as of {run.AsOf:d MMM yyyy} approved and posted",
+            $"Provision now KES {run.TotalProvisionRequired:N2}", "/loans/provisioning", NotificationAudience.User(run.ComputedByUserId), byUser), ct);
         return run;
     }
 
@@ -117,6 +123,7 @@ public sealed class ProvisioningService(LendingDbContext db, ILedgerService ledg
         run.Reject(byUser, reason);
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("loans.provisioning.rejected", nameof(ProvisioningRun), run.Id.ToString(), byUser, $$"""{"reason":"{{reason.Replace("\"", "'")}}"}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("loans.provisioning.rejected", $"Provisioning run as of {run.AsOf:d MMM yyyy} rejected", reason, "/loans/provisioning", NotificationAudience.User(run.ComputedByUserId), byUser), ct);
         return run;
     }
 }

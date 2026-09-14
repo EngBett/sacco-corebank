@@ -9,6 +9,7 @@
     <ProjectReference Include="../Sacco.Modules.Payments/Sacco.Modules.Payments.csproj" />
     <ProjectReference Include="../Sacco.Modules.Reporting/Sacco.Modules.Reporting.csproj" />
     <ProjectReference Include="../Sacco.Modules.Identity/Sacco.Modules.Identity.csproj" />
+    <ProjectReference Include="../Sacco.Modules.Notifications/Sacco.Modules.Notifications.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">

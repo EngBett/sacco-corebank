@@ -4,6 +4,8 @@ using Microsoft.Extensions.Options;
 using Sacco.Modules.Lending.Domain;
 using Sacco.Modules.Lending.Persistence;
 using Sacco.Shared.Audit;
+using Sacco.Shared.Auth;
+using Sacco.Shared.Notifications;
 using Sacco.Shared.Domain;
 using Sacco.Shared.Ledger;
 using Sacco.Shared.Lending;
@@ -17,7 +19,7 @@ namespace Sacco.Modules.Lending.Application;
 public sealed record GuarantorExposure(Guid MemberId, decimal BosaDeposits, decimal ActiveGuarantees, int ActiveGuaranteeCount, decimal Capacity, decimal AvailableDeposits);
 
 /// <summary>Origination → guarantors → appraisal → N-of-M approval → disbursement. Eligibility reads BOSA balances through the Savings/Ledger contracts only.</summary>
-public sealed class LoanService(LendingDbContext db, ILedgerService ledger, ISavingsService savings, IMemberDirectory members, ITenantContext tenant, IClock clock, IAuditLogger audit, IOptions<LendingSettings> options)
+public sealed class LoanService(LendingDbContext db, ILedgerService ledger, ISavingsService savings, IMemberDirectory members, ITenantContext tenant, IClock clock, IAuditLogger audit, IOptions<LendingSettings> options, INotifier notifier, CreditScoringService scoring)
 {
     private LendingSettings Settings => options.Value;
 
@@ -76,8 +78,10 @@ public sealed class LoanService(LendingDbContext db, ILedgerService ledger, ISav
         return total;
     }
 
-    public async Task<Loan> ApplyAsync(Guid memberId, string productCode, decimal amount, int termMonths, string purpose, string? disbursementAccount, Guid byUser, CancellationToken ct)
+    public async Task<Loan> ApplyAsync(Guid memberId, string productCode, decimal amount, int termMonths, string purpose, string? disbursementAccount, Guid byUser, CancellationToken ct, bool bureauConsent = true)
     {
+        if (Settings.CreditBureau.RequireConsent && !bureauConsent)
+            throw new DomainRuleException("loans.bureau_consent_required", "The member's consent to a credit bureau check is required before an application can be captured.");
         var product = await GetProductAsync(productCode, ct);
         var eligibility = await EvaluateEligibilityAsync(memberId, product, ct);
         if (await db.Loans.AnyAsync(l => l.MemberId == memberId && l.ProductId == product.Id && (l.Status == LoanStatus.Applied || l.Status == LoanStatus.Appraised || l.Status == LoanStatus.PendingApproval || l.Status == LoanStatus.Approved), ct))
@@ -91,9 +95,13 @@ public sealed class LoanService(LendingDbContext db, ILedgerService ledger, ISav
         var account = disbursementAccount ?? summary.FosaAccountNumber ?? throw new DomainRuleException("loans.no_fosa_account", "The member has no FOSA account to disburse into.");
 
         var loan = Loan.Apply(Ids.New(), tenant.TenantId, await NextLoanNumberAsync(ct), memberId, product, amount, termMonths, purpose, account, eligibility, byUser, clock.UtcNow);
+        if (bureauConsent) loan.RecordBureauConsent(clock.UtcNow, Settings.CreditBureau.ConsentText);
         db.Loans.Add(loan);
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("loans.applied", nameof(Loan), loan.Id.ToString(), byUser, $$"""{"loan":"{{loan.LoanNumber}}","amount":{{amount}},"product":"{{product.Code}}"}"""), ct);
+        await scoring.ScoreLoanAsync(loan.Id, ScoreStage.Application, byUser, ct);
+        await notifier.NotifyAsync(new NotificationRequest("loans.applied", $"Loan {loan.LoanNumber} awaits appraisal",
+            $"{product.Code} · KES {amount:N2} over {termMonths} months · {purpose}", $"/loans/{loan.Id}", NotificationAudience.HoldersOf(Permissions.Loans.Appraise), byUser), ct);
         return loan;
     }
 
@@ -152,6 +160,7 @@ public sealed class LoanService(LendingDbContext db, ILedgerService ledger, ISav
         var g = loan.Guarantors.FirstOrDefault(x => x.Id == guarantorId) ?? throw new NotFoundException("Guarantor", guarantorId);
         g.Decline();
         await db.SaveChangesAsync(ct);
+        await audit.RecordAsync(new AuditEvent("loans.guarantor.declined", nameof(Loan), loan.Id.ToString(), byUser, $$"""{"guarantorMemberId":"{{g.GuarantorMemberId}}","amount":{{g.AmountGuaranteed}}}"""), ct);
         return loan;
     }
 
@@ -163,6 +172,9 @@ public sealed class LoanService(LendingDbContext db, ILedgerService ledger, ISav
         loan.Appraise(byUser, notes, clock.UtcNow);
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("loans.appraised", nameof(Loan), loan.Id.ToString(), byUser), ct);
+        await scoring.ScoreLoanAsync(loan.Id, ScoreStage.Appraisal, byUser, ct); // guarantees are in by now
+        await notifier.NotifyAsync(new NotificationRequest("loans.pending_approval", $"Loan {loan.LoanNumber} awaits committee approval",
+            $"KES {loan.Amount:N2} · appraised: {notes}", $"/loans/{loan.Id}", NotificationAudience.HoldersOf(Permissions.Loans.Approve), byUser), ct);
         return loan;
     }
 
@@ -188,6 +200,13 @@ public sealed class LoanService(LendingDbContext db, ILedgerService ledger, ISav
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent(nowApproved ? "loans.approved" : "loans.approval_recorded", nameof(Loan), loan.Id.ToString(), byUser,
             $$"""{"loan":"{{loan.LoanNumber}}","approvals":{{loan.Approvals.Count(a => a.Decision == ApprovalDecision.Approve)}},"required":{{product.ApprovalsRequiredFor(loan.Amount)}}}"""), ct);
+        if (nowApproved)
+        {
+            await notifier.NotifyAsync(new NotificationRequest("loans.approved", $"Loan {loan.LoanNumber} approved",
+                $"KES {loan.Amount:N2} is ready for disbursement to {loan.DisbursementAccountNumber}", $"/loans/{loan.Id}", NotificationAudience.User(loan.AppliedByUserId), byUser), ct);
+            await notifier.NotifyAsync(new NotificationRequest("loans.ready_to_disburse", $"Loan {loan.LoanNumber} is ready to disburse",
+                $"KES {loan.Amount:N2} · {product.Code}", $"/loans/{loan.Id}", NotificationAudience.HoldersOf(Permissions.Loans.Disburse), byUser), ct);
+        }
         return loan;
     }
 
@@ -210,6 +229,7 @@ public sealed class LoanService(LendingDbContext db, ILedgerService ledger, ISav
             await ledger.ReleaseHoldAsync(loan.PledgedDepositsAccountNumber, loan.PledgedDepositsAmount, $"Loan {loan.LoanNumber} rejected", ct);
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("loans.rejected", nameof(Loan), loan.Id.ToString(), byUser, $$"""{"reason":"{{reason.Replace("\"", "'")}}"}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("loans.rejected", $"Loan {loan.LoanNumber} rejected", reason, $"/loans/{loan.Id}", NotificationAudience.User(loan.AppliedByUserId), byUser), ct);
         return loan;
     }
 
@@ -237,6 +257,8 @@ public sealed class LoanService(LendingDbContext db, ILedgerService ledger, ISav
 
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("loans.disbursed", nameof(Loan), loan.Id.ToString(), byUser, $$"""{"loan":"{{loan.LoanNumber}}","amount":{{loan.Amount}},"fee":{{loan.ProcessingFee}},"account":"{{loan.DisbursementAccountNumber}}"}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("loans.disbursed", $"Loan {loan.LoanNumber} disbursed",
+            $"KES {net:N2} credited to {loan.DisbursementAccountNumber} (fee KES {loan.ProcessingFee:N2})", $"/loans/{loan.Id}", NotificationAudience.User(loan.AppliedByUserId), byUser), ct);
         return loan;
     }
 }

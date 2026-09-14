@@ -5,15 +5,84 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Sacco.Modules.Members.Domain;
 using Sacco.Modules.Members.Persistence;
 using Sacco.Shared.Audit;
+using Sacco.Shared.Auth;
+using Sacco.Shared.Notifications;
 using Sacco.Shared.Domain;
+using Sacco.Shared.Lending;
 using Sacco.Shared.Members;
+using Sacco.Shared.Savings;
 using Sacco.Shared.Tenancy;
 using Sacco.Shared.Time;
 
 namespace Sacco.Modules.Members.Application;
 
-public sealed class MemberService(MembersDbContext db, ITenantContext tenant, IClock clock, IAuditLogger audit)
+public sealed class MemberService(MembersDbContext db, ITenantContext tenant, IClock clock, IAuditLogger audit, INotifier notifier, ILendingService lending, ISavingsService savings, IMemberLoginProvisioner logins)
 {
+    private static readonly System.Text.Json.JsonSerializerOptions Json = new(System.Text.Json.JsonSerializerDefaults.Web);
+
+    // ---- Exit (maker-checker) ----
+
+    public async Task<Member> RequestExitAsync(Guid id, string reason, Guid byUser, CancellationToken ct)
+    {
+        var member = await GetAsync(id, ct);
+        member.RequestExit(byUser, reason, clock.UtcNow);
+        await db.SaveChangesAsync(ct);
+        await audit.RecordAsync(new AuditEvent("members.exit.requested", nameof(Member), id.ToString(), byUser, $$"""{"memberNumber":"{{member.MemberNumber}}","reason":"{{reason.Replace("\"", "'")}}"}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("members.exit.pending", $"Exit of member {member.MemberNumber} awaits approval", $"{member.Details.FullName} · {reason}", $"/members/{id}", NotificationAudience.HoldersOf(Permissions.Members.ExitApprove), byUser), ct);
+        return member;
+    }
+
+    public async Task<Member> CancelExitAsync(Guid id, string reason, Guid byUser, CancellationToken ct)
+    {
+        var member = await GetAsync(id, ct);
+        var requester = member.ExitRequestedByUserId;
+        member.CancelExitRequest(byUser, reason);
+        await db.SaveChangesAsync(ct);
+        await audit.RecordAsync(new AuditEvent("members.exit.cancelled", nameof(Member), id.ToString(), byUser, $$"""{"reason":"{{reason.Replace("\"", "'")}}"}"""), ct);
+        if (requester is { } r) await notifier.NotifyAsync(new NotificationRequest("members.exit.cancelled", $"Exit of member {member.MemberNumber} was declined", reason, $"/members/{id}", NotificationAudience.User(r), byUser), ct);
+        return member;
+    }
+
+    /// <summary>
+    /// Checker step. In order: active guarantees must be released, loans are paid off from BOSA deposits, every account
+    /// balance is paid out through the chosen channel and closed, the self-service login is disabled, the member exits.
+    /// Each step's own rules can refuse (insufficient deposits, holds outstanding), leaving the request pending.
+    /// </summary>
+    public async Task<Member> ApproveExitAsync(Guid id, ExitPayoutChannel channel, Guid byUser, CancellationToken ct)
+    {
+        var member = await GetAsync(id, ct);
+        if (member.KycStatus != KycStatus.ExitRequested) throw new DomainRuleException("members.exit.not_requested", $"{member.MemberNumber} has no pending exit request.");
+        MakerChecker.EnsureDistinct(member.ExitRequestedByUserId ?? Guid.Empty, byUser, $"exit of {member.MemberNumber}");
+
+        var loans = await lending.SettleOnExitAsync(id, byUser, ct);
+        var payout = await savings.CloseAccountsOnExitAsync(id, channel, byUser, ct);
+        await logins.DeactivateAsync(id, byUser, ct);
+        var summary = System.Text.Json.JsonSerializer.Serialize(new { loansSettled = loans.Loans, totalSettled = loans.TotalSettled, accounts = payout.Accounts, totalPaid = payout.TotalPaid, channel = channel.ToString() }, Json);
+        member.Exit(byUser, summary, clock.UtcNow);
+        await db.SaveChangesAsync(ct);
+        await audit.RecordAsync(new AuditEvent("members.exit.approved", nameof(Member), id.ToString(), byUser, summary), ct);
+        if (member.ExitRequestedByUserId is { } r)
+            await notifier.NotifyAsync(new NotificationRequest("members.exit.approved", $"Member {member.MemberNumber} has exited", $"Loans settled KES {loans.TotalSettled:N2} · paid out KES {payout.TotalPaid:N2} by {channel}", $"/members/{id}", NotificationAudience.User(r), byUser), ct);
+        return member;
+    }
+
+    public async Task EnableSelfServiceAsync(Guid id, string pin, Guid byUser, CancellationToken ct)
+    {
+        var member = await GetAsync(id, ct);
+        if (!member.IsInGoodStanding) throw new DomainRuleException("members.not_verified", $"Only verified members can use self-service; {member.MemberNumber} is {member.KycStatus}.");
+        await logins.ProvisionAsync(id, member.Details.FullName, member.Details.PhoneNumber, pin, byUser, ct);
+        await audit.RecordAsync(new AuditEvent("members.self_service.enabled", nameof(Member), id.ToString(), byUser, $$"""{"memberNumber":"{{member.MemberNumber}}","phone":"{{member.Details.PhoneNumber}}"}"""), ct);
+    }
+
+    public async Task DisableSelfServiceAsync(Guid id, Guid byUser, CancellationToken ct)
+    {
+        var member = await GetAsync(id, ct);
+        await logins.DeactivateAsync(id, byUser, ct);
+        await audit.RecordAsync(new AuditEvent("members.self_service.disabled", nameof(Member), id.ToString(), byUser, $$"""{"memberNumber":"{{member.MemberNumber}}"}"""), ct);
+    }
+
+    public Task<bool> IsSelfServiceEnabledAsync(Guid id, CancellationToken ct) => logins.IsEnabledAsync(id, ct);
+
     public async Task<string> NextMemberNumberAsync(CancellationToken ct)
     {
         // Atomic increment (row lock taken by the UPSERT itself); first call for a tenant inserts the row.
@@ -49,6 +118,8 @@ public sealed class MemberService(MembersDbContext db, ITenantContext tenant, IC
         db.Members.Add(member);
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("members.registered", nameof(Member), member.Id.ToString(), registeredBy, $$"""{"memberNumber":"{{member.MemberNumber}}","source":"{{source}}"}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("members.kyc.pending", $"Member {member.MemberNumber} awaits KYC verification",
+            $"{details.FullName} registered via {source}", $"/members/{member.Id}", NotificationAudience.HoldersOf(Permissions.Members.KycVerify), registeredBy), ct);
         return member;
     }
 
@@ -81,6 +152,8 @@ public sealed class MemberService(MembersDbContext db, ITenantContext tenant, IC
         member.VerifyKyc(byUser, clock.UtcNow);
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("members.kyc.verified", nameof(Member), id.ToString(), byUser, $$"""{"memberNumber":"{{member.MemberNumber}}","registeredBy":"{{member.RegisteredByUserId}}"}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("members.kyc.verified", $"Member {member.MemberNumber} is KYC verified",
+            $"{member.Details.FullName} can now open accounts and apply for loans", $"/members/{member.Id}", NotificationAudience.User(member.RegisteredByUserId), byUser), ct);
         return member;
     }
 
@@ -90,6 +163,7 @@ public sealed class MemberService(MembersDbContext db, ITenantContext tenant, IC
         member.RejectKyc(byUser, reason);
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("members.kyc.rejected", nameof(Member), id.ToString(), byUser, $$"""{"reason":"{{reason.Replace("\"", "'")}}"}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("members.kyc.rejected", $"KYC for member {member.MemberNumber} rejected", reason, $"/members/{member.Id}", NotificationAudience.User(member.RegisteredByUserId), byUser), ct);
         return member;
     }
 
@@ -126,6 +200,8 @@ public sealed class MemberService(MembersDbContext db, ITenantContext tenant, IC
         var app = MembershipApplication.Submit(Ids.New(), tenant.TenantId, details, kin, channel, fingerprint, botCheckPassed, clock.Today, clock.UtcNow);
         db.Applications.Add(app);
         await db.SaveChangesAsync(ct);
+        await notifier.NotifyAsync(new NotificationRequest("members.application.pending", "New membership application awaits review",
+            $"{details.FullName} applied via {channel}", "/applications", NotificationAudience.HoldersOf(Permissions.Members.ApplicationsReview), SystemActors.System), ct);
         return app;
     }
 

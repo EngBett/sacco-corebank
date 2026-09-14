@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Sacco.Modules.Ledger.Domain;
 using Sacco.Modules.Ledger.Persistence;
 using Sacco.Shared.Audit;
+using Sacco.Shared.Auth;
+using Sacco.Shared.Notifications;
 using Sacco.Shared.Domain;
 using Sacco.Shared.Ledger;
 using Sacco.Shared.Tenancy;
@@ -14,7 +16,7 @@ namespace Sacco.Modules.Ledger.Application;
 /// adjustment and therefore never takes effect on the initiator's say-so alone
 /// (non-negotiable #6). Every decision is audit-logged.
 /// </summary>
-public sealed class JournalWorkflow(LedgerDbContext db, PostingEngine engine, ITenantContext tenant, IClock clock, IAuditLogger audit)
+public sealed class JournalWorkflow(LedgerDbContext db, PostingEngine engine, ITenantContext tenant, IClock clock, IAuditLogger audit, INotifier notifier)
 {
     public async Task<JournalEntry> CreatePendingAsync(string reference, string description, DateOnly valueDate, IReadOnlyList<PostingLine> lines, Guid initiatedBy, CancellationToken ct)
     {
@@ -31,6 +33,8 @@ public sealed class JournalWorkflow(LedgerDbContext db, PostingEngine engine, IT
         }
         await audit.RecordAsync(new AuditEvent("ledger.journal.initiated", nameof(JournalEntry), entry.Id.ToString(), initiatedBy,
             $$"""{"reference":"{{entry.Reference}}","amount":{{entry.TotalAmount}}}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("ledger.journal.pending", $"Journal {entry.Reference} awaits approval",
+            $"{entry.Description} · KES {entry.TotalAmount:N2}", $"/ledger/journals/{entry.Id}", NotificationAudience.HoldersOf(Permissions.Ledger.JournalApprove), initiatedBy), ct);
         return entry;
     }
 
@@ -56,6 +60,8 @@ public sealed class JournalWorkflow(LedgerDbContext db, PostingEngine engine, IT
             await audit.RecordAsync(new AuditEvent("ledger.journal.approved", nameof(JournalEntry), entry.Id.ToString(), approvingUserId,
                 $$"""{"reference":"{{entry.Reference}}","amount":{{entry.TotalAmount}},"initiatedBy":"{{entry.InitiatedByUserId}}"}"""), ct);
             await tx.CommitAsync(ct);
+            await notifier.NotifyAsync(new NotificationRequest("ledger.journal.approved", $"Journal {entry.Reference} was approved and posted",
+                $"KES {entry.TotalAmount:N2} · {entry.Description}", $"/ledger/journals/{entry.Id}", NotificationAudience.User(entry.InitiatedByUserId), approvingUserId), ct);
             return entry;
         });
     }
@@ -68,6 +74,8 @@ public sealed class JournalWorkflow(LedgerDbContext db, PostingEngine engine, IT
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("ledger.journal.rejected", nameof(JournalEntry), entry.Id.ToString(), rejectingUserId,
             $$"""{"reference":"{{entry.Reference}}","reason":"{{reason.Replace("\"", "'")}}"}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("ledger.journal.rejected", $"Journal {entry.Reference} was rejected",
+            reason, $"/ledger/journals/{entry.Id}", NotificationAudience.User(entry.InitiatedByUserId), rejectingUserId), ct);
         return entry;
     }
 
@@ -101,6 +109,8 @@ public sealed class JournalWorkflow(LedgerDbContext db, PostingEngine engine, IT
         }
         await audit.RecordAsync(new AuditEvent("ledger.journal.reversal_requested", nameof(JournalEntry), reversal.Id.ToString(), initiatedBy,
             $$"""{"original":"{{original.Reference}}","reason":"{{reason.Replace("\"", "'")}}"}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("ledger.journal.pending", $"Reversal {reversal.Reference} awaits approval",
+            $"{reason} · KES {reversal.TotalAmount:N2}", $"/ledger/journals/{reversal.Id}", NotificationAudience.HoldersOf(Permissions.Ledger.JournalApprove), initiatedBy), ct);
         return reversal;
     }
 }

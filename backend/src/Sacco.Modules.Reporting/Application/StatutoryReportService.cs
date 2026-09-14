@@ -4,6 +4,8 @@ using Microsoft.Extensions.Options;
 using Sacco.Modules.Reporting.Domain;
 using Sacco.Modules.Reporting.Persistence;
 using Sacco.Shared.Audit;
+using Sacco.Shared.Auth;
+using Sacco.Shared.Notifications;
 using Sacco.Shared.Domain;
 using Sacco.Shared.Ledger;
 using Sacco.Shared.Lending;
@@ -30,7 +32,7 @@ public sealed record StatutoryReturnPackage(DateOnly PeriodStart, DateOnly Perio
     decimal? SdgfContribution, ReconciliationResult Reconciliation, IReadOnlyList<string> OpenItems);
 
 /// <summary>Builds every SASRA-facing statement from the ledger and lending contracts, and proves the package reconciles to the cent.</summary>
-public sealed class StatutoryReportService(ReportingDbContext db, ILedgerService ledger, ILendingService lending, ITenantContext tenant, IClock clock, IAuditLogger audit, IOptions<ReportingSettings> options)
+public sealed class StatutoryReportService(ReportingDbContext db, ILedgerService ledger, ILendingService lending, ITenantContext tenant, IClock clock, IAuditLogger audit, IOptions<ReportingSettings> options, INotifier notifier)
 {
     private ReportingSettings S => options.Value;
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { WriteIndented = false };
@@ -159,6 +161,8 @@ public sealed class StatutoryReportService(ReportingDbContext db, ILedgerService
         db.Returns.Add(ret);
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("reporting.return.generated", nameof(StatutoryReturn), ret.Id.ToString(), byUser, $$"""{"periodEnd":"{{periodEnd:yyyy-MM-dd}}","reconciled":{{package.Reconciliation.IsReconciled.ToString().ToLower()}}}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("reporting.return.generated", $"Statutory return to {periodEnd:d MMM yyyy} is ready for submission",
+            package.Reconciliation.IsReconciled ? "All reconciliation checks passed" : "Reconciliation checks failed; it cannot be submitted yet", $"/reporting/{ret.Id}", NotificationAudience.HoldersOf(Permissions.Reporting.StatutorySubmit), byUser), ct);
         return ret;
     }
 
@@ -170,6 +174,8 @@ public sealed class StatutoryReportService(ReportingDbContext db, ILedgerService
         ret.Submit(byUser, submissionReference, clock.UtcNow);
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("reporting.return.submitted", nameof(StatutoryReturn), ret.Id.ToString(), byUser, $$"""{"periodEnd":"{{ret.PeriodEnd:yyyy-MM-dd}}","reference":"{{submissionReference}}","generatedBy":"{{ret.GeneratedByUserId}}"}"""), ct);
+        await notifier.NotifyAsync(new NotificationRequest("reporting.return.submitted", $"Statutory return to {ret.PeriodEnd:d MMM yyyy} submitted to SASRA",
+            $"Submission reference {submissionReference}", $"/reporting/{ret.Id}", NotificationAudience.User(ret.GeneratedByUserId), byUser), ct);
         return ret;
     }
 

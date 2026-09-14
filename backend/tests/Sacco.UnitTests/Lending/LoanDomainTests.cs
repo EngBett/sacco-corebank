@@ -99,13 +99,13 @@ public class LoanDomainTests
         loan.ArrearsAmount(Today).ShouldBeGreaterThan(0);
 
         var first = loan.Schedule.First();
-        var (interest, principal, _) = loan.AllocateRepayment(first.TotalDue);
+        var (interest, principal, _) = loan.AllocateRepayment(first.TotalDue, Now);
         interest.ShouldBe(first.InterestDue);
         principal.ShouldBe(first.PrincipalDue);
         first.Status.ShouldBe(InstallmentStatus.Paid);
         loan.IsFullyRepaid.ShouldBeFalse();
 
-        loan.AllocateRepayment(loan.Schedule.Where(i => i.Status != InstallmentStatus.Paid).Sum(i => i.Outstanding));
+        loan.AllocateRepayment(loan.Schedule.Where(i => i.Status != InstallmentStatus.Paid).Sum(i => i.Outstanding), Now);
         loan.IsFullyRepaid.ShouldBeTrue();
     }
 

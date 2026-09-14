@@ -7,6 +7,8 @@ public enum KycStatus
     Rejected = 3,
     Suspended = 4,
     Exited = 5,
+    /// <summary>Exit requested (maker); balances are settled and the member exits on approval (checker).</summary>
+    ExitRequested = 6,
 }
 
 public sealed record MemberSummary(Guid Id, string MemberNumber, string FullName, string NationalIdNumber, string PhoneNumber, KycStatus KycStatus, DateOnly JoinedAt);

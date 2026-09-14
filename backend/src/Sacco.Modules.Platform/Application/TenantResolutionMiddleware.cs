@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Sacco.Shared.Auth;
 using Sacco.Shared.Tenancy;
 
 namespace Sacco.Modules.Platform.Application;
@@ -62,6 +64,14 @@ public sealed class TenantResolutionMiddleware(RequestDelegate next, IOptions<Te
                 await Reject(context, StatusCodes.Status400BadRequest, "tenant.unknown", $"Tenant '{headerSlug}' does not exist");
                 return;
             }
+        }
+
+        // Hub connections carry a hub ticket instead of a bearer token, and browsers cannot add headers to a
+        // WebSocket upgrade — so on hub paths the ticket (which names the tenant) is the source of truth.
+        if (context.User.Identity?.IsAuthenticated != true && path.StartsWithSegments(HubTicketAuth.PathPrefix))
+        {
+            var result = await context.AuthenticateAsync(HubTicketAuth.Scheme);
+            if (result.Succeeded) context.User = result.Principal;
         }
 
         // An authenticated token is bound to exactly one tenant; it must agree with whatever the request claims.

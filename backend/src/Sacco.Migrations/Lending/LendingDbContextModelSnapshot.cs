@@ -93,6 +93,15 @@ namespace Sacco.Migrations.Lending
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("approved_at");
 
+                    b.Property<DateTimeOffset?>("BureauConsentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("bureau_consent_at");
+
+                    b.Property<string>("BureauConsentText")
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)")
+                        .HasColumnName("bureau_consent_text");
+
                     b.Property<DateTimeOffset?>("ClosedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("closed_at");
@@ -172,6 +181,10 @@ namespace Sacco.Migrations.Lending
                         .HasColumnType("character varying(500)")
                         .HasColumnName("rejection_reason");
 
+                    b.Property<int>("RestructureCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("restructure_count");
+
                     b.Property<int>("Segment")
                         .HasColumnType("integer")
                         .HasColumnName("segment");
@@ -210,6 +223,94 @@ namespace Sacco.Migrations.Lending
                     b.ToTable("loans", "lending");
                 });
 
+            modelBuilder.Entity("Sacco.Modules.Lending.Domain.LoanAdjustment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.Property<Guid?>("DecidedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("decided_by_user_id");
+
+                    b.Property<string>("DecisionNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("decision_notes");
+
+                    b.Property<decimal?>("InterestReversed")
+                        .HasColumnType("numeric")
+                        .HasColumnName("interest_reversed");
+
+                    b.Property<Guid?>("JournalEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("journal_entry_id");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid>("LoanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("loan_id");
+
+                    b.Property<string>("LoanNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("loan_number");
+
+                    b.Property<int?>("NewInterestRateBps")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_interest_rate_bps");
+
+                    b.Property<int?>("NewTermMonths")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_term_months");
+
+                    b.Property<decimal?>("PrincipalWrittenOff")
+                        .HasColumnType("numeric")
+                        .HasColumnName("principal_written_off");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
+                    b.Property<Guid>("RequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_loan_adjustments");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_loan_adjustments_tenant_id");
+
+                    b.HasIndex("LoanId", "Status")
+                        .HasDatabaseName("ix_loan_adjustments_loan_id_status");
+
+                    b.ToTable("loan_adjustments", "lending");
+                });
+
             modelBuilder.Entity("Sacco.Modules.Lending.Domain.LoanApproval", b =>
                 {
                     b.Property<Guid>("Id")
@@ -246,6 +347,88 @@ namespace Sacco.Migrations.Lending
                         .HasDatabaseName("ix_loan_approvals_loan_id_approver_user_id");
 
                     b.ToTable("loan_approvals", "lending");
+                });
+
+            modelBuilder.Entity("Sacco.Modules.Lending.Domain.LoanCreditScore", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BureauNarrative")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("bureau_narrative");
+
+                    b.Property<string>("BureauReference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("bureau_reference");
+
+                    b.Property<int>("BureauStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("bureau_status");
+
+                    b.Property<DateTimeOffset>("ComputedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("computed_at");
+
+                    b.Property<Guid>("ComputedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("computed_by_user_id");
+
+                    b.Property<string>("FactorsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("factors_json");
+
+                    b.Property<string>("Grade")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("grade");
+
+                    b.Property<Guid>("LoanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("loan_id");
+
+                    b.Property<int>("Recommendation")
+                        .HasColumnType("integer")
+                        .HasColumnName("recommendation");
+
+                    b.Property<string>("RecommendationReason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("recommendation_reason");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer")
+                        .HasColumnName("score");
+
+                    b.Property<DateTimeOffset>("ScorecardUpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scorecard_updated_at");
+
+                    b.Property<int>("Stage")
+                        .HasColumnType("integer")
+                        .HasColumnName("stage");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_loan_credit_scores");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_loan_credit_scores_tenant_id");
+
+                    b.HasIndex("LoanId", "ComputedAt")
+                        .HasDatabaseName("ix_loan_credit_scores_loan_id_computed_at");
+
+                    b.ToTable("loan_credit_scores", "lending");
                 });
 
             modelBuilder.Entity("Sacco.Modules.Lending.Domain.LoanGuarantor", b =>
@@ -683,6 +866,83 @@ namespace Sacco.Migrations.Lending
                     b.ToTable("repayment_schedule", "lending");
                 });
 
+            modelBuilder.Entity("Sacco.Modules.Lending.Domain.Scorecard", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("ApproveThreshold")
+                        .HasColumnType("integer")
+                        .HasColumnName("approve_threshold");
+
+                    b.Property<bool>("DeclineIfBureauListed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("decline_if_bureau_listed");
+
+                    b.Property<int>("ReferThreshold")
+                        .HasColumnType("integer")
+                        .HasColumnName("refer_threshold");
+
+                    b.Property<string>("Source")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("source");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_scorecards");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_scorecards_tenant_id");
+
+                    b.ToTable("scorecards", "lending");
+                });
+
+            modelBuilder.Entity("Sacco.Modules.Lending.Domain.ScorecardFactor", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("key");
+
+                    b.Property<int>("MaxPoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_points");
+
+                    b.Property<Guid>("ScorecardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("scorecard_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_scorecard_factors");
+
+                    b.HasIndex("ScorecardId", "Key")
+                        .IsUnique()
+                        .HasDatabaseName("ix_scorecard_factors_scorecard_id_key");
+
+                    b.ToTable("scorecard_factors", "lending");
+                });
+
             modelBuilder.Entity("Sacco.Modules.Lending.Domain.AgingBucket", b =>
                 {
                     b.HasOne("Sacco.Modules.Lending.Domain.ProvisioningConfig", null)
@@ -789,6 +1049,16 @@ namespace Sacco.Migrations.Lending
                         .HasConstraintName("fk_repayment_schedule_loans_loan_id");
                 });
 
+            modelBuilder.Entity("Sacco.Modules.Lending.Domain.ScorecardFactor", b =>
+                {
+                    b.HasOne("Sacco.Modules.Lending.Domain.Scorecard", null)
+                        .WithMany("Factors")
+                        .HasForeignKey("ScorecardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_scorecard_factors_scorecards_scorecard_id");
+                });
+
             modelBuilder.Entity("Sacco.Modules.Lending.Domain.Loan", b =>
                 {
                     b.Navigation("Approvals");
@@ -806,6 +1076,11 @@ namespace Sacco.Migrations.Lending
             modelBuilder.Entity("Sacco.Modules.Lending.Domain.ProvisioningRun", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("Sacco.Modules.Lending.Domain.Scorecard", b =>
+                {
+                    b.Navigation("Factors");
                 });
 #pragma warning restore 612, 618
         }

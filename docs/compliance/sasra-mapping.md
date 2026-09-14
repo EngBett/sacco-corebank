@@ -34,3 +34,11 @@ These are encoded as configuration with build-time defaults and are printed in e
 - Current SDGF contribution basis (`Reporting:SdgfContributionBps`, unset)
 - Liquidity weighting of FOSA demand liabilities
 - Single-member large-exposure limit (`Reporting:LargeExposureThresholdBps`, 25%)
+
+## Credit reference bureau checks (added 2026-09-14)
+
+| Requirement | Where it lives | Status |
+|---|---|---|
+| Consult a licensed CRB before granting credit (Credit Reference Bureau Regulations; SASRA prudential guidance) | `CreditScoringService` runs an `ICreditBureau` lookup on every application and appraisal; outcome and reference are stored on `lending.loan_credit_scores` and audited as `loans.scored` | Sandbox provider only. A live provider (TransUnion / Metropol / Creditinfo) is a configuration-selected implementation still to be written; confirm the SACCO's CRB subscription and consent wording at cutover |
+| Consistent, explainable credit decisions | Tenant scorecard (`/api/loans/scoring/scorecard`) with stored per-factor breakdown per computation; recommendation is advisory, approval remains maker-checker (ADR 0010) | Implemented |
+

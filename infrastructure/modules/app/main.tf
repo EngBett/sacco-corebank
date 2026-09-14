@@ -261,6 +261,8 @@ locals {
     { name = "IdentityServer__Clients__0__GrantTypes__0", value = "code" },
     { name = "IdentityServer__Clients__0__RedirectUris__0", value = "https://${local.portal_host}/api/auth/callback" },
     { name = "IdentityServer__Clients__0__PostLogoutRedirectUris__0", value = "https://${local.portal_host}/" },
+    { name = "Cors__AllowedOrigins__0", value = "https://${local.portal_host}" },
+    { name = "Cors__AllowedOrigins__1", value = "https://*.${local.portal_host}" },
     { name = "IdentityServer__Clients__1__ClientId", value = "mobile" },
     { name = "IdentityServer__Clients__1__GrantTypes__0", value = "code" },
     { name = "IdentityServer__Clients__1__RequireClientSecret", value = "false" },
@@ -291,6 +293,7 @@ locals {
   ]
   portal_env = [
     { name = "API_BASE_URL", value = "https://${local.api_host}" },
+    { name = "API_BROWSER_URL", value = "https://${local.api_host}" },
     { name = "OIDC_ISSUER", value = "https://${local.api_host}" },
     { name = "OIDC_CLIENT_ID", value = "portal-bff" },
     { name = "OIDC_REDIRECT_URI", value = "https://${local.portal_host}/api/auth/callback" },

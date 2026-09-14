@@ -16,6 +16,7 @@ backend/src/
   Sacco.Modules.Savings/     Savings products, shares, dividends
   Sacco.Modules.Lending/     Loan products, guarantors, approval workflow, provisioning
   Sacco.Modules.Reporting/   SASRA returns, FOSA/BOSA and consolidated statements
+  Sacco.Modules.Notifications/ Per-user in-app notifications, SignalR hub, hub tickets (ADR 0009)
   Sacco.Sagas/                Wolverine sagas — payment provider orchestration, batch check-off
   Sacco.Shared/                Cross-module contracts, common auth policies, permission constants
   Sacco.Migrations/            EF Core migrations (one folder + history table per module schema)
@@ -92,6 +93,11 @@ tenant query filter and snake_case naming.
 - `POST /api/loans/accrue-interest` recognises interest on due instalments (idempotent per instalment).
 - NPL aging and provisioning rates are `ProvisioningConfig` rows (seeded with the SASRA schedule; confirm
   the current circular before Phase 6). A `ProvisioningRun` is computed by one user and posted by another.
+- Credit scoring (ADR 0010): `CreditScoringService` scores every application at capture and again at appraisal (and on
+  demand via `POST /api/loans/{id}/score`, permission `loans.appraise`). `CreditScoringEngine` is a pure function of the
+  tenant `Scorecard` (`/api/loans/scoring/scorecard`, permission `loans.scoring.manage`) and `ScoringInputs`; every run is
+  stored in `loan_credit_scores` with its factor breakdown. `ICreditBureau` is sandbox by default (ID ending 0 = listed,
+  9 = unavailable); `Lending:CreditBureau:Mode=Live` needs a real provider. The recommendation never changes loan status.
 - Not yet built: write-off, restructuring, member exit settlement (needs `ILendingService.GetMemberExposureAsync`, which exists).
 
 ## Payments (Phase 5)
@@ -115,6 +121,19 @@ tenant query filter and snake_case naming.
   passed, and the submitter must differ from the generator. `OpenItems` in every package lists what still needs SASRA confirmation.
 - Historical dates: aging/provisioning use each loan's ledger statement closing balance as of the date, so a return for a past
   period end reconciles to that day's trial balance.
+
+## Notifications (real-time)
+
+- `Sacco.Modules.Notifications` implements `INotifier` (Sacco.Shared): domain services call it right after the audit
+  write at every maker-checker hand-off and outcome (journals, withdrawals, loans, provisioning runs, KYC, membership
+  applications, payments, statutory returns). Audience is explicit users or `HoldersOf(permission)`; the actor is never
+  told about their own action. Rows are persisted per recipient, then pushed over SignalR (`/hubs/notifications`) to the
+  `tenant:{id}:user:{id}` group.
+- Browsers never hold the API token, so the hub authenticates with a **hub ticket**: `POST /api/notifications/hub-ticket`
+  mints a 15-minute JWT (same signing key, audience `sacco-hub`) accepted only by the `HubTicket` scheme on `/hubs/*`.
+  See ADR 0009. `Cors:AllowedOrigins` (portal origins) applies to the hub only.
+- The seed tool registers the module without the SignalR pusher; notifications appear as a side effect of the seeders
+  driving the real workflows, plus a welcome note per user (`NotificationsSeeder`).
 
 ## Running locally
 

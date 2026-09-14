@@ -75,6 +75,22 @@ curl -s -X POST http://localhost:5000/connect/token \
 
 Browser login (authorization code + PKCE, used by the portal BFF): `http://localhost:5000/account/login?tenant=demo`.
 
+## Credit scoring
+
+The demo scorecard is the platform default (100 points across eight factors; approve ≥ 70, refer ≥ 50, decline when
+CRB-listed). Every seeded loan carries its scores. The sandbox bureau keys off the national ID's last digit, so
+`M00010` (ID …10) is CRB-listed — his seeded loan (`LN-000005`) shows a **Decline** recommendation that the committee
+overrode, and `M00009` (ID …09) gets an "unavailable" bureau result, which turns her approve-band score into **Refer**.
+Sign in as `manager` to edit the scorecard at `/loans/scoring`; as `loanofficer` to recompute a score on any open application.
+
+## Notifications
+
+Every demo user signs in to an inbox: the seeders drive the real workflows, so the pending journal notifies the
+checkers, the approved loans notify the loan officer, and so on. `NotificationsSeeder` adds a welcome note per user and
+marks the older half of each inbox read, leaving something unread for every role. Trigger a live one while the portal is
+open: as `accountant`, create a manual journal — `manager` (holder of `ledger.journal.approve`) sees it arrive in the bell
+without a refresh.
+
 ## Status by phase
 
 - [x] Phase 1 — tenant, chart of accounts (FOSA/BOSA tagged), member sub-ledger accounts, 12 months of balanced postings, pending manual journal

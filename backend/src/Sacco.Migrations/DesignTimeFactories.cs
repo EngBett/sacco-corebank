@@ -8,6 +8,7 @@ using Sacco.Modules.Lending.Persistence;
 using Sacco.Modules.Payments.Persistence;
 using Sacco.Modules.Reporting.Persistence;
 using Sacco.Modules.Platform.Persistence;
+using Sacco.Modules.Notifications.Persistence;
 using Sacco.Shared.Persistence;
 using Sacco.Shared.Tenancy;
 
@@ -72,4 +73,9 @@ public sealed class PaymentsDbContextFactory : IDesignTimeDbContextFactory<Payme
 public sealed class ReportingDbContextFactory : IDesignTimeDbContextFactory<ReportingDbContext>
 {
     public ReportingDbContext CreateDbContext(string[] args) => new(DesignTime.Options<ReportingDbContext>(ReportingDbContext.SchemaName), new TenantContext());
+}
+
+public sealed class NotificationsDbContextFactory : IDesignTimeDbContextFactory<NotificationsDbContext>
+{
+    public NotificationsDbContext CreateDbContext(string[] args) => new(DesignTime.Options<NotificationsDbContext>(NotificationsDbContext.SchemaName), new TenantContext());
 }

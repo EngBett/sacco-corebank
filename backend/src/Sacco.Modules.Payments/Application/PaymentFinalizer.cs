@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Sacco.Modules.Payments.Domain;
 using Sacco.Modules.Payments.Persistence;
 using Sacco.Shared.Audit;
+using Sacco.Shared.Notifications;
 using Sacco.Shared.Domain;
 using Sacco.Shared.Ledger;
 using Sacco.Shared.Lending;
@@ -20,7 +21,7 @@ public enum FinalizeOutcome { Applied, AlreadyProcessed, Unmatched }
 /// happens first, inside the same unit of work as the status change, so a duplicate delivery is
 /// detected by the unique index before any ledger posting.
 /// </summary>
-public sealed class PaymentFinalizer(PaymentsDbContext db, ISavingsService savings, ILendingService lending, ILedgerService ledger, ITenantContext tenant, IClock clock, IAuditLogger audit, ILogger<PaymentFinalizer> logger)
+public sealed class PaymentFinalizer(PaymentsDbContext db, ISavingsService savings, ILendingService lending, ILedgerService ledger, ITenantContext tenant, IClock clock, IAuditLogger audit, INotifier notifier, ILogger<PaymentFinalizer> logger)
 {
     public async Task<FinalizeOutcome> ApplyAsync(Guid transactionId, ProviderEvent e, CancellationToken ct)
     {
@@ -52,6 +53,8 @@ public sealed class PaymentFinalizer(PaymentsDbContext db, ISavingsService savin
             var journalId = await PostAsync(tx, e, ct);
             tx.MarkSucceeded(e.ProviderTransactionReference, journalId, clock.UtcNow);
             await audit.RecordAsync(new AuditEvent("payments.succeeded", nameof(PaymentTransaction), tx.Id.ToString(), tx.InitiatedByUserId, $$"""{"reference":"{{tx.OurReference}}","provider":"{{e.ProviderName}}","providerRef":"{{e.ProviderTransactionReference}}","amount":{{tx.Amount}}}"""), ct);
+            await notifier.NotifyAsync(new NotificationRequest("payments.succeeded", $"{tx.Kind} {tx.OurReference} succeeded",
+                $"KES {tx.Amount:N2} via {e.ProviderName} · {e.ProviderTransactionReference}", "/payments", NotificationAudience.User(tx.InitiatedByUserId), SystemActors.System), ct);
         }
         else
         {
@@ -59,6 +62,8 @@ public sealed class PaymentFinalizer(PaymentsDbContext db, ISavingsService savin
             if (tx.Purpose.Type == PaymentPurposeType.WithdrawalPayout && tx.Purpose.WithdrawalId is Guid wid)
                 await savings.FailWithdrawalPayoutAsync(wid, tx.FailureReason!, ct);
             await audit.RecordAsync(new AuditEvent("payments.failed", nameof(PaymentTransaction), tx.Id.ToString(), tx.InitiatedByUserId, $$"""{"reference":"{{tx.OurReference}}","reason":"{{(tx.FailureReason ?? "").Replace("\"", "'")}}"}"""), ct);
+            await notifier.NotifyAsync(new NotificationRequest("payments.failed", $"{tx.Kind} {tx.OurReference} failed",
+                $"KES {tx.Amount:N2} via {e.ProviderName}: {tx.FailureReason}", "/payments", NotificationAudience.User(tx.InitiatedByUserId), SystemActors.System), ct);
         }
         await db.SaveChangesAsync(ct);
         return FinalizeOutcome.Applied;

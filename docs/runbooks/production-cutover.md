@@ -27,3 +27,11 @@ fix the module, don't special-case the cutover.
 Document, before go-live, what "roll back" means for this SACCO specifically — at minimum,
 confirm database backups are restorable and payment provider webhooks can be safely paused
 without losing in-flight transaction state.
+
+## Real-time notifications (ADR 0009)
+
+- Set `Cors:AllowedOrigins` to the portal origin(s) (wildcard tenant subdomains are allowed, e.g. `https://*.portal.example`)
+  and the portal's `API_BROWSER_URL` to the API origin the browser reaches. The Terraform app module does both.
+- SignalR keeps connections in process. Before running more than one API task, add a backplane
+  (`Microsoft.AspNetCore.SignalR.StackExchangeRedis`, MIT) so a notification raised on one instance reaches sessions on another,
+  or pin the hub to a single instance behind the load balancer with sticky sessions.

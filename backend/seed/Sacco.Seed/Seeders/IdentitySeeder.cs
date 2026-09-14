@@ -29,7 +29,7 @@ public sealed class IdentitySeeder(IdentityDbContext db, UserService users, Role
         ("Branch Manager", "Approves journals, withdrawals, disbursements; reviews applications",
             [Permissions.Members.View, Permissions.Members.Create, Permissions.Members.Edit, Permissions.Members.Suspend, Permissions.Members.ApplicationsReview,
              Permissions.Savings.View, Permissions.Savings.AccountsOpen, Permissions.Savings.WithdrawalApprove, Permissions.Savings.DividendsApprove,
-             Permissions.Loans.View, Permissions.Loans.Approve, Permissions.Loans.Disburse, Permissions.Loans.Restructure,
+             Permissions.Loans.View, Permissions.Loans.Approve, Permissions.Loans.Disburse, Permissions.Loans.Restructure, Permissions.Loans.ScoringManage,
              Permissions.Ledger.View, Permissions.Ledger.JournalApprove, Permissions.Ledger.AccountsManage, Permissions.Payments.View, Permissions.Payments.Reconcile, Permissions.Reporting.View]),
         ("Accountant", "Maintains the GL and prepares journals",
             [Permissions.Ledger.View, Permissions.Ledger.JournalCreate, Permissions.Ledger.JournalReverse, Permissions.Ledger.ChartManage, Permissions.Savings.View, Permissions.Savings.ProductsManage, Permissions.Savings.DividendsDeclare,
