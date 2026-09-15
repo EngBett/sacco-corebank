@@ -24,7 +24,7 @@ public sealed class CollectionSaga : Saga
     public string? ProviderRequestId { get; set; }
     public bool Finalised { get; set; }
 
-    public static async Task<CollectionSaga> Start(StartCollection cmd, PaymentsDbContext db, PaymentProviderRegistry providers, TenantContext tenant, IClock clock, IMessageBus bus, IOptions<PaymentsSettings> settings, ILogger<CollectionSaga> logger, CancellationToken ct)
+    public static async Task<CollectionSaga> Start(StartCollection cmd, PaymentsDbContext db, PaymentProviderRegistry providers, PaymentFinalizer finalizer, TenantContext tenant, IClock clock, IMessageBus bus, IOptions<PaymentsSettings> settings, ILogger<CollectionSaga> logger, CancellationToken ct)
     {
         tenant.Set(cmd.TenantId, cmd.TenantSlug);
         var tx = await db.Transactions.FirstAsync(t => t.Id == cmd.Id, ct);
@@ -43,6 +43,13 @@ public sealed class CollectionSaga : Saga
         tx.MarkPendingCallback(result.ProviderRequestId!);
         saga.ProviderRequestId = result.ProviderRequestId;
         await db.SaveChangesAsync(ct);
+        if (result.Completed)
+        {
+            // Synchronous providers (bank transfers) answer with the receipt; there is no callback to wait for.
+            await finalizer.ApplyAsync(cmd.Id, new ProviderEvent(tx.Provider, result.ProviderTransactionReference ?? $"SYNC-{result.ProviderRequestId}", result.ProviderRequestId, null, ProviderTransactionState.Succeeded, tx.Amount, tx.Counterparty, null, clock.UtcNow), ct);
+            saga.Finalised = true; saga.MarkCompleted();
+            return saga;
+        }
         await bus.ScheduleAsync(new CollectionTimeout(cmd.Id, cmd.TenantId, cmd.TenantSlug), TimeSpan.FromMinutes(Math.Max(1, settings.Value.CallbackTimeoutMinutes)));
         if (provider.IsSandbox && settings.Value.SandboxAutoCallbackSeconds > 0)
             await bus.ScheduleAsync(new SimulateCollectionCallback(cmd.Id, cmd.TenantId, cmd.TenantSlug), TimeSpan.FromSeconds(settings.Value.SandboxAutoCallbackSeconds));
@@ -96,7 +103,7 @@ public sealed class DisbursementSaga : Saga
     public string? ProviderRequestId { get; set; }
     public bool Finalised { get; set; }
 
-    public static async Task<DisbursementSaga> Start(StartDisbursement cmd, PaymentsDbContext db, PaymentProviderRegistry providers, TenantContext tenant, IClock clock, IMessageBus bus, IOptions<PaymentsSettings> settings, ILogger<DisbursementSaga> logger, CancellationToken ct)
+    public static async Task<DisbursementSaga> Start(StartDisbursement cmd, PaymentsDbContext db, PaymentProviderRegistry providers, PaymentFinalizer finalizer, TenantContext tenant, IClock clock, IMessageBus bus, IOptions<PaymentsSettings> settings, ILogger<DisbursementSaga> logger, CancellationToken ct)
     {
         tenant.Set(cmd.TenantId, cmd.TenantSlug);
         var tx = await db.Transactions.FirstAsync(t => t.Id == cmd.Id, ct);
@@ -114,6 +121,12 @@ public sealed class DisbursementSaga : Saga
         tx.MarkPendingCallback(result.ProviderRequestId!);
         saga.ProviderRequestId = result.ProviderRequestId;
         await db.SaveChangesAsync(ct);
+        if (result.Completed)
+        {
+            await finalizer.ApplyAsync(cmd.Id, new ProviderEvent(tx.Provider, result.ProviderTransactionReference ?? $"SYNC-{result.ProviderRequestId}", result.ProviderRequestId, null, ProviderTransactionState.Succeeded, tx.Amount, tx.Counterparty, null, clock.UtcNow), ct);
+            saga.Finalised = true; saga.MarkCompleted();
+            return saga;
+        }
         await bus.ScheduleAsync(new DisbursementTimeout(cmd.Id, cmd.TenantId, cmd.TenantSlug), TimeSpan.FromMinutes(Math.Max(1, settings.Value.CallbackTimeoutMinutes)));
         if (provider.IsSandbox && settings.Value.SandboxAutoCallbackSeconds > 0)
             await bus.ScheduleAsync(new SimulateDisbursementCallback(cmd.Id, cmd.TenantId, cmd.TenantSlug), TimeSpan.FromSeconds(settings.Value.SandboxAutoCallbackSeconds));

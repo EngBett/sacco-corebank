@@ -40,12 +40,12 @@ public sealed class LoanLifecycleTests(PostgresFixture pg) : IDisposable
         var eligibility = await (await Officer.GetAsync($"/api/loans/eligibility?memberId={borrower}&productCode={LendingSeeder.Development}")).ReadAs<EligibilityResponse>();
         eligibility.MaxEligibleAmount.ShouldBeGreaterThan(0);
 
-        var tooMuch = await Officer.PostAsJsonAsync("/api/loans", new ApplyLoanRequest(borrower, LendingSeeder.Development, eligibility.MaxEligibleAmount + 1_000m, 12, "Too much", null));
+        var tooMuch = await Officer.PostAsJsonAsync("/api/loans", new ApplyLoanRequest(borrower, LendingSeeder.Development, eligibility.MaxEligibleAmount + 1_000m, 12, "Too much", null, BureauConsent: true));
         tooMuch.StatusCode.ShouldBe(HttpStatusCode.UnprocessableEntity);
 
         var amount = Math.Min(eligibility.MaxEligibleAmount, 110_000m); // above the 100k committee threshold if eligible
         amount.ShouldBeGreaterThan(100_000m, "M00015 has enough deposits for a committee-sized loan in the seed");
-        var loan = await (await Officer.PostAsJsonAsync("/api/loans", new ApplyLoanRequest(borrower, LendingSeeder.Development, amount, 24, "Business expansion", null))).ReadAs<LoanResponse>();
+        var loan = await (await Officer.PostAsJsonAsync("/api/loans", new ApplyLoanRequest(borrower, LendingSeeder.Development, amount, 24, "Business expansion", null, BureauConsent: true))).ReadAs<LoanResponse>();
         loan.Status.ShouldBe(LoanStatus.Applied);
         loan.ApprovalsRequired.ShouldBe(2);
         loan.ProcessingFee.ShouldBe(decimal.Round(amount * 0.01m, 2));
@@ -132,7 +132,7 @@ public sealed class LoanLifecycleTests(PostgresFixture pg) : IDisposable
         (exposure.Capacity - exposure.ActiveGuarantees).ShouldBeLessThan(exposure.Capacity * 0.5m, "the seed puts M00003 well into her cap");
 
         var borrower = DemoTenant.MemberId("M00012");
-        var loan = await (await Officer.PostAsJsonAsync("/api/loans", new ApplyLoanRequest(borrower, LendingSeeder.Emergency, 20_000m, 6, "Test", null))).ReadAs<LoanResponse>();
+        var loan = await (await Officer.PostAsJsonAsync("/api/loans", new ApplyLoanRequest(borrower, LendingSeeder.Emergency, 20_000m, 6, "Test", null, BureauConsent: true))).ReadAs<LoanResponse>();
         var r = await Officer.PostAsJsonAsync($"/api/loans/{loan.Id}/guarantors", new AddGuarantorRequest(heavy, exposure.Capacity)); // more than remaining room
         r.StatusCode.ShouldBe(HttpStatusCode.UnprocessableEntity);
         (await r.Content.ReadAsStringAsync()).ShouldContain("loans.guarantor.exposure_cap");

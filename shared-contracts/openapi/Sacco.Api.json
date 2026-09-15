@@ -6,6 +6,75 @@
     "version": "v1"
   },
   "paths": {
+    "/api/self/statements/{accountNumber}": {
+      "get": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "GetMyStatement",
+        "parameters": [
+          {
+            "name": "accountNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountStatement"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/self/profile": {
+      "get": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "GetMyProfile",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfileResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/public/membership-applications": {
       "post": {
         "tags": [
@@ -67,6 +136,59 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/PublicLoanProduct"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/payments/topup": {
+      "post": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "SelfServiceTopUp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelfTopUpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentTransactionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/payments": {
+      "get": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "GetMyPayments",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentTransactionResponse"
                   }
                 }
               }
@@ -1282,6 +1404,185 @@
         }
       }
     },
+    "/api/members/{id}/exit/request": {
+      "post": {
+        "tags": [
+          "Members"
+        ],
+        "operationId": "RequestMemberExit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/members/{id}/exit/cancel": {
+      "post": {
+        "tags": [
+          "Members"
+        ],
+        "operationId": "CancelMemberExit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/members/{id}/exit/approve": {
+      "post": {
+        "tags": [
+          "Members"
+        ],
+        "operationId": "ApproveMemberExit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveExitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/members/{id}/self-service": {
+      "post": {
+        "tags": [
+          "Members"
+        ],
+        "operationId": "EnableMemberSelfService",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnableSelfServiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Members"
+        ],
+        "operationId": "DisableMemberSelfService",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/members/by-number/{memberNumber}": {
       "get": {
         "tags": [
@@ -1929,6 +2230,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WithdrawalResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/accounts": {
+      "get": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "GetMyAccounts",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SavingsAccountResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/summary": {
+      "get": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "GetMySavingsSummary",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberSavingsSummary"
                 }
               }
             }
@@ -4296,6 +4640,30 @@
         }
       }
     },
+    "/api/reporting/statutory-returns/{id}/export.csv": {
+      "get": {
+        "tags": [
+          "Statutory returns"
+        ],
+        "operationId": "ExportStatutoryReturnCsv",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/reporting/statutory-returns/{id}/submit": {
       "post": {
         "tags": [
@@ -4518,6 +4886,112 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HubTicketResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/outbox": {
+      "get": {
+        "tags": [
+          "Notifications outbox"
+        ],
+        "operationId": "ListOutboundMessages",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OutboundStatus"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfOutboundMessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/outbox/channels": {
+      "get": {
+        "tags": [
+          "Notifications outbox"
+        ],
+        "operationId": "GetNotificationChannels",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/outbox/{id}/retry": {
+      "post": {
+        "tags": [
+          "Notifications outbox"
+        ],
+        "operationId": "RetryOutboundMessage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutboundMessageResponse"
                 }
               }
             }
@@ -5080,6 +5554,17 @@
           }
         }
       },
+      "ApproveExitRequest": {
+        "required": [
+          "channel"
+        ],
+        "type": "object",
+        "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/ExitPayoutChannel"
+          }
+        }
+      },
       "AuditLogResponse": {
         "required": [
           "id",
@@ -5230,6 +5715,40 @@
           },
           "newPassword": {
             "type": "string"
+          }
+        }
+      },
+      "ChannelInfo": {
+        "required": [
+          "sms",
+          "smsSandbox",
+          "email",
+          "emailSandbox",
+          "smsKindPrefixes",
+          "emailEnabled"
+        ],
+        "type": "object",
+        "properties": {
+          "sms": {
+            "type": "string"
+          },
+          "smsSandbox": {
+            "type": "boolean"
+          },
+          "email": {
+            "type": "string"
+          },
+          "emailSandbox": {
+            "type": "boolean"
+          },
+          "smsKindPrefixes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "emailEnabled": {
+            "type": "boolean"
           }
         }
       },
@@ -6164,10 +6683,27 @@
           }
         }
       },
+      "EnableSelfServiceRequest": {
+        "required": [
+          "pin"
+        ],
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": "string"
+          }
+        }
+      },
       "EntryDirection": {
         "enum": [
           "Debit",
           "Credit"
+        ]
+      },
+      "ExitPayoutChannel": {
+        "enum": [
+          "Cash",
+          "BankTransfer"
         ]
       },
       "FactorScore": {
@@ -8065,7 +8601,14 @@
           "kycVerifiedAt",
           "kycRejectionReason",
           "suspensionReason",
-          "documents"
+          "documents",
+          "exitRequestedByUserId",
+          "exitRequestedAt",
+          "exitReason",
+          "exitApprovedByUserId",
+          "exitedAt",
+          "exitSettlementJson",
+          "selfServiceEnabled"
         ],
         "type": "object",
         "properties": {
@@ -8130,6 +8673,135 @@
             "items": {
               "$ref": "#/components/schemas/KycDocumentDto"
             }
+          },
+          "exitRequestedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "exitRequestedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "exitReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "exitApprovedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "exitedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "exitSettlementJson": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "selfServiceEnabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MemberSavingsSummary": {
+        "required": [
+          "memberId",
+          "bosaDeposits",
+          "shares",
+          "fosaBalance",
+          "fixedDeposits",
+          "monthsWithContributions",
+          "firstContributionDate",
+          "fosaAccountNumber",
+          "bosaDepositAccountNumber",
+          "sharesAccountNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bosaDeposits": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "shares": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fosaBalance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fixedDeposits": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "monthsWithContributions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "firstContributionDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "fosaAccountNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bosaDepositAccountNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sharesAccountNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -8179,6 +8851,56 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "MessageChannel": {
+        "enum": [
+          "Sms",
+          "Email"
+        ]
+      },
+      "MyProfileResponse": {
+        "required": [
+          "id",
+          "memberNumber",
+          "fullName",
+          "phoneNumber",
+          "email",
+          "kycStatus",
+          "joinedAt",
+          "nextOfKin"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "memberNumber": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "kycStatus": {
+            "$ref": "#/components/schemas/KycStatus"
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "nextOfKin": {
+            "$ref": "#/components/schemas/NextOfKinDto"
           }
         }
       },
@@ -8303,6 +9025,97 @@
             "type": "string"
           }
         }
+      },
+      "OutboundMessageResponse": {
+        "required": [
+          "id",
+          "notificationId",
+          "recipientUserId",
+          "channel",
+          "address",
+          "subject",
+          "body",
+          "status",
+          "providerReference",
+          "error",
+          "attempts",
+          "createdAt",
+          "sentAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "notificationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "recipientUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/MessageChannel"
+          },
+          "address": {
+            "type": "string"
+          },
+          "subject": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "body": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OutboundStatus"
+          },
+          "providerReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "error": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "attempts": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sentAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "OutboundStatus": {
+        "enum": [
+          "Queued",
+          "Sent",
+          "Failed"
+        ]
       },
       "PagedResultOfApplicationResponse": {
         "required": [
@@ -8522,6 +9335,47 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NotificationResponse"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfOutboundMessageResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OutboundMessageResponse"
             }
           },
           "page": {
@@ -10283,6 +11137,37 @@
           }
         }
       },
+      "SelfTopUpRequest": {
+        "required": [
+          "provider",
+          "amount",
+          "accountNumber",
+          "loanNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "loanNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "SetProvisioningConfigRequest": {
         "required": [
           "buckets",
@@ -11272,6 +12157,9 @@
   },
   "tags": [
     {
+      "name": "Self-service"
+    },
+    {
       "name": "Public"
     },
     {
@@ -11320,9 +12208,6 @@
       "name": "Loans"
     },
     {
-      "name": "Self-service"
-    },
-    {
       "name": "Credit scoring"
     },
     {
@@ -11339,6 +12224,9 @@
     },
     {
       "name": "Notifications"
+    },
+    {
+      "name": "Notifications outbox"
     }
   ]
 }

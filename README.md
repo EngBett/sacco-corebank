@@ -35,7 +35,8 @@ cd frontend/public-site && npm install && npm run dev   # public site on http://
 ```
 
 Demo logins (tenant `demo`, password `Demo2026!pass`): `admin`, `teller`, `loanofficer`, `committee1`, `committee2`,
-`manager`, `accountant`, `compliance` — see `backend/seed/README.md` for what each can demo. Tests:
+`manager`, `accountant`, `compliance` — see `backend/seed/README.md` for what each can demo. Members sign in to the
+self-service API with their phone number and PIN `2468` (e.g. `254700100001`). Tests:
 
 ```bash
 dotnet test --project backend/tests/Sacco.UnitTests

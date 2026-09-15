@@ -76,6 +76,27 @@ namespace Sacco.Migrations.Members
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<Guid?>("ExitApprovedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("exit_approved_by_user_id");
+
+                    b.Property<string>("ExitReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("exit_reason");
+
+                    b.Property<DateTimeOffset?>("ExitRequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("exit_requested_at");
+
+                    b.Property<Guid?>("ExitRequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("exit_requested_by_user_id");
+
+                    b.Property<string>("ExitSettlementJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("exit_settlement_json");
+
                     b.Property<DateTimeOffset?>("ExitedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("exited_at");

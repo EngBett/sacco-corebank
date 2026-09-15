@@ -13,6 +13,7 @@ public class IdentityDbContext(DbContextOptions<IdentityDbContext> options, ITen
     public DbSet<StaffUser> Users => Set<StaffUser>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<PersistedGrantRecord> PersistedGrants => Set<PersistedGrantRecord>();
+    public DbSet<MemberLogin> MemberLogins => Set<MemberLogin>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -53,6 +54,17 @@ public class IdentityDbContext(DbContextOptions<IdentityDbContext> options, ITen
             b.ToTable("role_permissions");
             b.HasKey(p => new { p.RoleId, p.Permission });
             b.Property(p => p.Permission).HasMaxLength(100);
+        });
+
+        mb.Entity<MemberLogin>(b =>
+        {
+            b.ToTable("member_logins");
+            b.HasKey(l => l.Id);
+            b.HasIndex(l => new { l.TenantId, l.MemberId }).IsUnique();
+            b.HasIndex(l => new { l.TenantId, l.PhoneNumber });
+            b.Property(l => l.PhoneNumber).HasMaxLength(20).IsRequired();
+            b.Property(l => l.DisplayName).HasMaxLength(150).IsRequired();
+            b.Property(l => l.PinHash).HasMaxLength(500).IsRequired();
         });
 
         mb.Entity<PersistedGrantRecord>(b =>

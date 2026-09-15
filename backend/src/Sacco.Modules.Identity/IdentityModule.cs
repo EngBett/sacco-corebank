@@ -34,6 +34,8 @@ public static class IdentityModule
         services.AddScoped<RoleService>();
         services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddScoped<IHubTicketIssuer, HubTicketIssuer>();
+        services.AddScoped<MemberLoginService>();
+        services.AddScoped<IMemberLoginProvisioner>(sp => sp.GetRequiredService<MemberLoginService>());
         services.AddSingleton<IModuleEndpoints, IdentityAdminEndpoints>();
         services.AddSingleton<IModuleEndpoints, AccountEndpoints>();
 

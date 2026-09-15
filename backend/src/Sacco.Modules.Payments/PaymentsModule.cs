@@ -22,11 +22,17 @@ public static class PaymentsModule
         services.AddModuleDbContext<PaymentsDbContext>(connectionString, PaymentsDbContext.SchemaName);
         services.Configure<PaymentsSettings>(configuration.GetSection(PaymentsSettings.SectionName));
         services.AddHttpClient(nameof(DarajaMpesaProvider));
+        services.AddHttpClient(AirtelMoneyProvider.HttpClientName);
         // Sandbox providers are singletons so their in-memory request store survives across requests (and sagas).
         services.AddSingleton<SandboxMpesaProvider>();
         services.AddSingleton<SandboxAirtelMoneyProvider>();
         services.AddSingleton<SandboxBankProvider>();
         services.AddSingleton<DarajaMpesaProvider>();
+        services.AddSingleton<AirtelMoneyProvider>();
+        services.AddHttpClient(EquityJengaProvider.HttpClientName);
+        services.AddHttpClient(NcbaProvider.HttpClientName);
+        services.AddSingleton<EquityJengaProvider>();
+        services.AddSingleton<NcbaProvider>();
         services.AddSingleton<PaymentProviderRegistry>();
         services.AddScoped<PaymentFinalizer>();
         services.AddScoped<PaymentService>();

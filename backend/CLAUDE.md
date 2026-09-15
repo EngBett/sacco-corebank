@@ -98,7 +98,15 @@ tenant query filter and snake_case naming.
   tenant `Scorecard` (`/api/loans/scoring/scorecard`, permission `loans.scoring.manage`) and `ScoringInputs`; every run is
   stored in `loan_credit_scores` with its factor breakdown. `ICreditBureau` is sandbox by default (ID ending 0 = listed,
   9 = unavailable); `Lending:CreditBureau:Mode=Live` needs a real provider. The recommendation never changes loan status.
-- Not yet built: write-off, restructuring, member exit settlement (needs `ILendingService.GetMemberExposureAsync`, which exists).
+- Write-off and restructuring are `LoanAdjustment` requests (maker `loans.restructure`, checker `loans.approve`): approval of a
+  write-off charges the provision GL and reverses uncollected accrued interest, closes the ledger account and releases
+  guarantees; approval of a restructure rebuilds the schedule over the outstanding principal (due interest carried into the
+  first instalment). Instalments record `PaidAt`, so the repayment-history factor sees late payments on closed loans.
+- `LendingMaintenanceService` (API host only, `Lending:Maintenance`) accrues interest daily and purges bureau narratives past
+  `Lending:CreditBureau:RetentionDays`. Applications carry the member's bureau consent (`Lending:CreditBureau:ConsentText`).
+- Member exit: `ILendingService.SettleOnExitAsync` pays every active loan off from BOSA deposits (`RepaymentChannel.DepositsOffset`,
+  future interest waived) and refuses while the member guarantees others; `ISavingsService.CloseAccountsOnExitAsync` pays out
+  and closes the rest. Orchestrated by `MemberService.ApproveExitAsync` (maker `members.exit`, checker `members.exit.approve`).
 
 ## Payments (Phase 5)
 
@@ -110,6 +118,12 @@ tenant query filter and snake_case naming.
   that path (`Tenancy:PathTenantPrefixes`). Processing is inline (`IMessageBus.InvokeAsync`) so the provider's HTTP response
   reflects the outcome; replays are idempotent through `processed_provider_transactions`.
 - The seed tool registers a stub `IMessageBus`; it writes fixtures through `PaymentFinalizer` directly and never runs sagas.
+- Live providers: `DarajaMpesaProvider` (M-Pesa), `AirtelMoneyProvider` (Airtel Money Open API, from `reference/Brij.AirtelMoney`),
+  `EquityJengaProvider` (`Bank:EQUITY`) and `NcbaProvider` (`Bank:NCBA`), all unit-tested through a fake HTTP handler and driven
+  end to end against `mocked-providers/` (`e2e/run-local.sh`). Providers that cannot set callback headers validate a shared
+  secret from the callback URL: the webhook endpoint exposes query parameters as `query:<name>` entries in `WebhookPayload.Headers`.
+  A provider that settles synchronously returns `Completed = true` with the receipt and the saga finalises without a callback.
+  Banks live under `Payments:Banks:{CODE}`; `Payments:DefaultBankProvider` picks the one for bank-transfer withdrawals.
 
 ## Reporting (Phase 6)
 
@@ -121,6 +135,19 @@ tenant query filter and snake_case naming.
   passed, and the submitter must differ from the generator. `OpenItems` in every package lists what still needs SASRA confirmation.
 - Historical dates: aging/provisioning use each loan's ledger statement closing balance as of the date, so a return for a past
   period end reconciles to that day's trial balance.
+
+## Member self-service (ADR 0008)
+
+- `identity.member_logins`: phone + PIN, provisioned from the Members module through `IMemberLoginProvisioner`. The password
+  validator and the interactive login try staff credentials first, then member phone + PIN; member tokens carry `member_id`
+  and `PermissionResolver` grants the fixed `Permissions.Self` set. `ICurrentUser.RequireMemberId()` guards `/api/self/*`,
+  which live in the module that owns the data (Members, Savings, Ledger, Lending, Payments) and scope every query to the token's member.
+
+## Tenancy hardening (ADR 0011)
+
+- Row-level security is **forced** after migrations (`RowLevelSecurity.ForceTenantIsolationAsync`, called by the API host and
+  the seed tool), and `TenantConnectionInterceptor` clears `app.tenant_id` when no tenant is resolved. Background work must bind
+  a tenant per scope (`ITenantEnumerator` + `TenantContext.Set`) or it reads nothing.
 
 ## Notifications (real-time)
 
@@ -134,11 +161,27 @@ tenant query filter and snake_case naming.
   See ADR 0009. `Cors:AllowedOrigins` (portal origins) applies to the hub only.
 - The seed tool registers the module without the SignalR pusher; notifications appear as a side effect of the seeders
   driving the real workflows, plus a welcome note per user (`NotificationsSeeder`).
+- Out-of-band delivery: `OutboundDispatcher` writes `notifications.outbound_messages` (email for every notification, SMS for the
+  kinds in `Notifications:Delivery:SmsKindPrefixes`) and sends through `ISmsSender`/`IEmailSender` — sandbox (DB row only, no
+  network call) by default, a real gateway when `Notifications:Sms:Mode` / `Notifications:Email:Mode` are `Live`. A failed send
+  is logged and left `Failed` on the row (retryable from `/api/notifications/outbox`); it never throws back into the workflow
+  that raised the notification. `Notifications:Redis` enables the SignalR backplane for multiple replicas.
+- Both channels are provider-agnostic (ADR 0012). `SmtpEmailSender` speaks plain SMTP, so every email provider — Mailpit
+  locally, SES/SendGrid/a SACCO's own mail server in production — is a `Notifications:Email:Smtp:Host/Port` config change,
+  no new code. SMS additionally has `Notifications:Sms:Provider` (`AfricasTalking` default, plus `Twilio`, `WhatsApp`,
+  `Safaricom`, `Airtel`, `Mock`) selecting the concrete `ISmsSender` in `NotificationsModule.RegisterLiveSmsSender`; every
+  sender lives in `Channels/SmsProviders.cs` and every caller (`OutboundDispatcher`) only ever sees the interface. Local dev
+  defaults (`appsettings.Development.json`, `docker-compose.yml`) route through Mailpit (SMTP catcher, UI at
+  `:8025`) and the local mock SMS gateway (`mocked-providers/mocked-sms-server`, UI at `:5108`) — both start by default
+  alongside `postgres`, need no credentials, and are what `docker compose up -d postgres mailpit mocked-sms` gives you.
+  `Twilio`/`WhatsApp` are written to the stable, well-documented vendor APIs; `Safaricom`/`Airtel` SMS are starter scaffolds
+  (no public sandbox exists for either) — confirm the endpoint and payload against the SACCO's actual contract before go-live,
+  the same caveat every live payment provider in this codebase already carries.
 
 ## Running locally
 
 ```bash
-docker compose up -d postgres                       # from repo root
+docker compose up -d postgres mailpit mocked-sms     # from repo root — mailpit/mocked-sms are the local mail/SMS channels
 dotnet run --project backend/seed/Sacco.Seed        # migrate + seed Demo SACCO (idempotent; add -- --reset to rebuild)
 dotnet run --project backend/src/Sacco.Api          # http://localhost:5000/scalar for the API reference
 dotnet test --project backend/tests/Sacco.UnitTests

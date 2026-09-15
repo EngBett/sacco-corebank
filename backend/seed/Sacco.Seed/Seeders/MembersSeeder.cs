@@ -12,6 +12,8 @@ namespace Sacco.Seed.Seeders;
 public sealed class MembersSeeder(MembersDbContext db, MemberService members, Sacco.Shared.Time.IClock clock, ILogger<MembersSeeder> logger) : ISeeder
 {
     public int Order => 15;
+    /// <summary>Self-service PIN for every seeded verified member (sandbox only).</summary>
+    public const string DemoPin = "2468";
 
     public async Task SeedAsync(CancellationToken ct)
     {
@@ -33,6 +35,7 @@ public sealed class MembersSeeder(MembersDbContext db, MemberService members, Sa
             {
                 case "Verified":
                     await members.VerifyKycAsync(member.Id, DemoTenant.Users.ComplianceOfficer, ct);
+                    await members.EnableSelfServiceAsync(member.Id, DemoPin, DemoTenant.Users.LoanOfficer, ct); // phone + PIN login for the member app
                     break;
                 case "Suspended":
                     // Verified now; suspended later by SavingsScenarioSeeder once her accounts and history exist.

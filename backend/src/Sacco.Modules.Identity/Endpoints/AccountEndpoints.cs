@@ -31,7 +31,7 @@ public sealed class AccountEndpoints(IHostEnvironment env, IConfiguration config
             return Results.Content(LoginPage(t?.Name ?? "SACCO Platform", t?.PrimaryColor ?? "#0f766e", slug ?? "", returnUrl ?? "/", null), "text/html");
         });
 
-        g.MapPost("/login", async (HttpContext http, IIdentityServerInteractionService interaction, ITenantLookup tenants, UserService users, IClock clock, CancellationToken ct) =>
+        g.MapPost("/login", async (HttpContext http, IIdentityServerInteractionService interaction, ITenantLookup tenants, UserService users, MemberLoginService memberLogins, IClock clock, CancellationToken ct) =>
         {
             var form = await http.Request.ReadFormAsync(ct);
             var slug = form["tenant"].ToString();
@@ -41,14 +41,16 @@ public sealed class AccountEndpoints(IHostEnvironment env, IConfiguration config
 
             var t = string.IsNullOrWhiteSpace(slug) ? null : await tenants.FindBySlugAsync(slug, ct);
             var user = t is null ? null : await users.AuthenticateAsync(t.Value.Id, userName, password, ct);
-            if (user is null)
+            var member = user is null || t is null ? null : null as AuthenticatedMember;
+            if (user is null && t is not null) member = await memberLogins.AuthenticateAsync(t.Value.Id, userName, password, ct);
+            if (user is null && member is null)
                 return Results.Content(LoginPage(t?.Name ?? "SACCO Platform", t?.PrimaryColor ?? "#0f766e", slug, returnUrl, "Invalid username or password."), "text/html", statusCode: 401);
 
-            var principal = new IdentityServerUser(user.Id.ToString())
+            var principal = new IdentityServerUser((user?.Id ?? member!.LoginId).ToString())
             {
-                DisplayName = user.DisplayName,
+                DisplayName = user?.DisplayName ?? member!.DisplayName,
                 AuthenticationTime = clock.UtcNow.UtcDateTime,
-                AdditionalClaims = SubjectClaims.For(t!.Value.Id, t.Value.Slug).ToList(),
+                AdditionalClaims = (user is not null ? SubjectClaims.For(t!.Value.Id, t.Value.Slug) : SubjectClaims.ForMember(t!.Value.Id, t.Value.Slug, member!.MemberId)).ToList(),
             }.CreatePrincipal();
             await http.SignInAsync(IdentityServerConstants.DefaultCookieAuthenticationScheme, principal, new AuthenticationProperties { IsPersistent = false });
 

@@ -27,6 +27,7 @@ public sealed class ApiFactory(string connectionString, bool realAuth = false) :
         builder.UseSetting("IdentityServer:Clients:0:ClientSecret", CliSecret);
         builder.UseSetting("Turnstile:Sandbox", "true");
         builder.UseSetting("PublicApi:ApiKey", PublicApiKey);
+        builder.UseSetting("Lending:Maintenance:Enabled", "false"); // tests call RunOnceAsync explicitly
 
         builder.ConfigureServices(services =>
         {
@@ -90,7 +91,8 @@ public static class HttpExtensions
 {
     public static async Task<T> ReadAs<T>(this HttpResponseMessage response)
     {
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException($"{(int)response.StatusCode} {response.RequestMessage?.Method} {response.RequestMessage?.RequestUri?.PathAndQuery}: {await response.Content.ReadAsStringAsync()}");
         return (await response.Content.ReadFromJsonAsync<T>(JsonOptions))!;
     }
 

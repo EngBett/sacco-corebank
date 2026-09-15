@@ -15,7 +15,7 @@ using Wolverine;
 
 namespace Sacco.Modules.Payments.Application;
 
-public sealed class PaymentService(PaymentsDbContext db, PaymentProviderRegistry providers, ISavingsService savings, IMemberDirectory members, ITenantContext tenant, IClock clock, IAuditLogger audit, IMessageBus bus)
+public sealed class PaymentService(PaymentsDbContext db, PaymentProviderRegistry providers, ISavingsService savings, IMemberDirectory members, ITenantContext tenant, IClock clock, IAuditLogger audit, IMessageBus bus, Microsoft.Extensions.Options.IOptions<Providers.PaymentsSettings> settings)
 {
     private static string NewReference(PaymentKind kind) => $"{(kind == PaymentKind.Collection ? "COL" : "DSB")}-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid():N}"[..28].ToUpperInvariant();
 
@@ -48,7 +48,7 @@ public sealed class PaymentService(PaymentsDbContext db, PaymentProviderRegistry
         {
             "MPesa" => ProviderNames.MPesa,
             "AirtelMoney" => ProviderNames.AirtelMoney,
-            "BankTransfer" => ProviderNames.SandboxBank,
+            "BankTransfer" => settings.Value.DefaultBankProvider,
             _ => throw new DomainRuleException("payments.withdrawal_channel", $"Withdrawal channel {w.Channel} is not paid through a provider."),
         };
         providers.Resolve(provider);

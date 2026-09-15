@@ -21,6 +21,34 @@ public static class RowLevelSecurity
             """);
     }
 
+    /// <summary>
+    /// Makes every tenant-isolation policy apply to the table owner too (FORCE). Migrations create tables as
+    /// the owner, so this runs after them; from then on not even the connection the API uses can read across
+    /// tenants, and a query issued without a tenant context returns nothing. Idempotent; safe on every start.
+    /// </summary>
+    public static async Task ForceTenantIsolationAsync(System.Data.Common.DbConnection connection, CancellationToken ct = default)
+    {
+        var opened = false;
+        if (connection.State != System.Data.ConnectionState.Open) { await connection.OpenAsync(ct); opened = true; }
+        try
+        {
+            var tables = new List<(string Schema, string Table)>();
+            await using (var query = connection.CreateCommand())
+            {
+                query.CommandText = "SELECT schemaname, tablename FROM pg_policies WHERE policyname = 'tenant_isolation'";
+                await using var reader = await query.ExecuteReaderAsync(ct);
+                while (await reader.ReadAsync(ct)) tables.Add((reader.GetString(0), reader.GetString(1)));
+            }
+            foreach (var (schema, table) in tables)
+            {
+                await using var alter = connection.CreateCommand();
+                alter.CommandText = $"ALTER TABLE \"{schema}\".\"{table}\" FORCE ROW LEVEL SECURITY";
+                await alter.ExecuteNonQueryAsync(ct);
+            }
+        }
+        finally { if (opened) await connection.CloseAsync(); }
+    }
+
     public static void DisableTenantIsolation(this MigrationBuilder mb, string schema, string table)
     {
         mb.Sql($"""

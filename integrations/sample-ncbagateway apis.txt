@@ -1,0 +1,391 @@
+## Below is a sample implementation of NCBA Apis that I copied from a random repository
+
+
+
+using Refit;
+
+public interface INcbaGatewayApi
+{
+    [Post("/api/v1/Auth/generate-token")]
+    Task<TokenResponse> GetTokenAsync([Body] TokenRequest request,[Property] bool noToken=true);
+    
+    [Post("/api/v1/MpesaB2WValidation/validate-account")]
+    Task<MobileValidateResponse> MobileValidateAsync([Body] MobileValidateRequest request);
+    
+    [Post("/api/v1/MobileB2WPayment/mobileb2wpayment")]
+    Task<MobileB2WPaymentResponse> MobileB2WPaymentAsync([Body] MobileB2WPaymentRequest request);
+    
+    [Post("/api/v1/MobileMoneyTransfer/mobilemoneytransfer")]
+    Task<MobileMoneyTransferResponse> MobileMoneyTransferAsync([Body] MobileMoneyTransferRequest request);
+    
+    [Post("/api/v1/PesaLinkTransaction/pesaLinktransaction")]
+    Task<PesaLinkTransactionResponse> PesaLinkPaymentAsync([Body] PesaLinkTransactionRequest request);
+    
+    [Post("/api/v1/TransactionAdvice/transactionadvice")]
+    Task<TransactionAdviceResponse> TransactionAdviceAsync([Body] TransactionAdviceRequest request);
+}
+
+public class NcbaService
+{
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly INcbaApi _ncbaApi;
+    private readonly ILogger<NcbaService> _logger;
+    private readonly ITransactionManager _transactionManager;
+    private readonly IBackgroundJobClient _backgroundJobClient;
+    private readonly NcbaSettings _ncbaSettings;
+    private readonly INcbaGatewayApi _ncbaGatewayApi;
+    private readonly NcbaGatewaySettings _ncbaGatewaySettings;
+
+    public NcbaService(IUnitOfWork unitOfWork, INcbaApi ncbaApi, ILogger<NcbaService> logger,
+        ITransactionManager transactionManager, IBackgroundJobClient backgroundJobClient,
+        IOptionsMonitor<NcbaSettings> ncbaSettings, INcbaGatewayApi ncbaGatewayApi, IOptionsMonitor<NcbaGatewaySettings> ncbaGatewaySettings)
+    {
+        _unitOfWork = unitOfWork;
+        _ncbaApi = ncbaApi;
+        _logger = logger;
+        _transactionManager = transactionManager;
+        _backgroundJobClient = backgroundJobClient;
+        _ncbaGatewayApi = ncbaGatewayApi;
+        _ncbaSettings = ncbaSettings.CurrentValue;
+        _ncbaGatewaySettings = ncbaGatewaySettings.CurrentValue;
+    }
+
+    public async Task SendTransfer(NcbaTransferModel model)
+    {
+        var transaction = await _unitOfWork.Repository<Transaction>()
+            .GetFirstOrDefaultAsync(x=>x.Id== model.TransactionId,includes: x => x.TransactionRecord!);
+        var recipient = await _unitOfWork.Repository<Recipient>()
+            .GetFirstOrDefaultAsync(x=>x.Id== model.RecipientId,x=>x.Narration,x=>x.Narration.Business);
+
+        var ncbaDisbursement = new NcbaDisbursement
+        {
+            LocalReference = transaction.TransactionReference,
+            Amount = recipient.Amount,
+            TransactionId = transaction.Id,
+            RecipientId = recipient.Id,
+            BusinessId = recipient.Narration.BusinessId,
+            AccountNumber = recipient.AccountReference!,
+            BankCode = DetermineNcbaApiBankCode(recipient),
+            BranchCode = DetermineNcbaApiBranchCode(recipient),
+            Currency = transaction.Currency,
+            Country = CurrencyToCountryName(transaction.Currency),
+            TranType = DetermineNcbaApiTranType(recipient),
+        };
+        
+        _unitOfWork.Repository<NcbaDisbursement>().Add(ncbaDisbursement);
+        await _unitOfWork.SaveChangesAsync();
+
+        try
+        {
+            NcbaBaseResponse? response = null;
+            if (ncbaDisbursement.TranType == NcbaTranType.LocalIft)
+            {
+                response = await _ncbaApi.InternalFundsTransfer(new IftRequest
+                {
+                    BeneficiaryName = recipient.BeneficiaryName!,
+                    Country = ncbaDisbursement.Country,
+                    Amount = (int)ncbaDisbursement.Amount,
+                    Reference = ncbaDisbursement.LocalReference!,
+                    Currency = ncbaDisbursement.Currency,
+                    Narration = recipient.Narration.Name,
+                    Account = ncbaDisbursement.AccountNumber!,
+                },_ncbaSettings.ApiKey);
+            }else if (ncbaDisbursement.TranType == NcbaTranType.PesaLink)
+            {
+                response = await _ncbaApi.PesaLinkTransfer(new PesaLinkRequest
+                {
+                    BranchCode = ncbaDisbursement.BranchCode,
+                    BeneficiaryName = recipient.BeneficiaryName!,
+                    BeneficiaryAccountName = recipient.BeneficiaryName!,
+                    Reference = ncbaDisbursement.LocalReference!,
+                    Account = ncbaDisbursement.AccountNumber!,
+                    Amount = (int)ncbaDisbursement.Amount,
+                    Narration = recipient.Narration.Name,
+                    TransactionDate = DateTime.UtcNow.AddHours(3).ToString("dd-MMM-yyyy"),
+                },_ncbaSettings.ApiKey);
+            }
+
+            if (response != null)
+            {
+                ncbaDisbursement.ResponseCode = response.ResponseCode.ToString();
+                ncbaDisbursement.ResponseDescription = response.Description;
+
+                if (response.ResponseCode == 0)
+                {
+                    ncbaDisbursement.NcbaTransactionReference = response.Reference;
+                    _backgroundJobClient.Schedule<NcbaService>(n=>n.QueryTransactionStatus(ncbaDisbursement.Id), TimeSpan.FromSeconds(30));
+                }
+                
+                await _unitOfWork.SaveChangesAsync();
+            }
+
+        }
+        catch (ApiException ex)
+        {
+           _logger.LogWarning("Api call to NCBA failed with status code {statusCode} and content {content}", ex.StatusCode, ex.Content);
+           await HandleFailedDisbursement(ncbaDisbursement, transaction, recipient);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred when disbursing funds via NCBA"); 
+            await HandleFailedDisbursement(ncbaDisbursement, transaction, recipient);
+        }
+
+    }
+
+    public async Task PesaLinkGatewayTransfer(NcbaTransferModel model)
+    {
+        var transaction = await _unitOfWork.Repository<Transaction>()
+            .GetFirstOrDefaultAsync(x=>x.Id== model.TransactionId,includes: x => x.TransactionRecord!);
+        var recipient = await _unitOfWork.Repository<Recipient>()
+            .GetFirstOrDefaultAsync(x=>x.Id== model.RecipientId,x=>x.Narration,x=>x.Narration.Business);
+
+        var ncbaDisbursement = new NcbaDisbursement
+        {
+            LocalReference = transaction.TransactionReference,
+            Amount = recipient.Amount,
+            TransactionId = transaction.Id,
+            RecipientId = recipient.Id,
+            BusinessId = recipient.Narration.BusinessId,
+            AccountNumber = recipient.AccountReference!,
+            BankCode = recipient.ShortCode!,
+            BranchCode = "-",
+            Currency = transaction.Currency,
+            Country = CurrencyToCountryName(transaction.Currency),
+            TranType = DetermineNcbaApiTranType(recipient),
+        };
+        
+        _unitOfWork.Repository<NcbaDisbursement>().Add(ncbaDisbursement);
+        await _unitOfWork.SaveChangesAsync();
+        
+        try
+        {
+            var response = await _ncbaGatewayApi.PesaLinkPaymentAsync(new PesaLinkTransactionRequest
+            {
+                Amount = recipient.Amount.ToString(),
+                BeneficiaryName = recipient.BeneficiaryName!,
+                BeneficiaryAccountNumber = recipient.AccountReference,
+                BeneficiaryBankBic = $"00{recipient.ShortCode}",
+                Currency = transaction.Currency,
+                Narration = recipient.Narration.Name,
+                SenderAccountNumber = _ncbaGatewaySettings.DebitAccount,
+                SenderCif = _ncbaGatewaySettings.DebitAccount.Substring(0,6),
+                SenderCountry = CurrencyToCountryName(transaction.Currency),
+                TransactionId = ncbaDisbursement.LocalReference!
+            });
+
+            ncbaDisbursement.ResponseCode = response.ResultCode;
+            ncbaDisbursement.ResponseDescription = response.StatusDescription;
+            ncbaDisbursement.NcbaTransactionReference = response.TxnReferenceNo;
+            await _unitOfWork.SaveChangesAsync();
+
+            if (!response.ResultCode.Equals("000"))
+            {
+                _logger.LogWarning("Pesalink transfer through NCBA Gateway failed with code {code} and description {description}", response.ResultCode, response.StatusDescription);
+                await HandleFailedDisbursement(ncbaDisbursement, transaction, recipient);
+                return;
+            }
+            
+            _backgroundJobClient.Schedule<NcbaService>(n=>n.PesaLinkTransactionStatusGateway(ncbaDisbursement.Id), TimeSpan.FromMinutes(1));
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogWarning("Api call to NCBA failed with status code {statusCode} and content {content}", ex.StatusCode, ex.Content);
+            await HandleFailedDisbursement(ncbaDisbursement, transaction, recipient);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred when disbursing funds via NCBA"); 
+            await HandleFailedDisbursement(ncbaDisbursement, transaction, recipient);
+        }
+    }
+
+    private string DetermineNcbaApiBankCode(Recipient recipient)
+    {
+        if (!recipient.ShortCode!.Equals(NcbaConstants.NcbaBankCode))
+        {
+            if (recipient.DisbursementType == DisbursementTypes.Mobile)
+            {
+                return NcbaConstants.MobileMoneyBankCode;
+            }
+
+            return NcbaConstants.PesalinkBankCode;
+        }
+
+        return recipient.ShortCode!;
+    }
+    
+    private string DetermineNcbaApiBranchCode(Recipient recipient)
+    {
+        if (recipient.DisbursementType == DisbursementTypes.Mobile)
+        {
+            return NcbaConstants.MobileMoneyBranchCode;
+        }
+        
+        return $"{recipient.ShortCode}000";
+    }
+    
+    private NcbaTranType DetermineNcbaApiTranType(Recipient recipient)
+    {
+        if (recipient.DisbursementType == DisbursementTypes.Mobile)
+        {
+            return NcbaTranType.MobileMoney;
+        }
+        
+        //todo add more logic to cater for rtgs and eft scenarios
+        if (!recipient.ShortCode!.Equals(NcbaConstants.NcbaBankCode))
+        {
+            return NcbaTranType.PesaLink;
+        }
+        
+        return NcbaTranType.LocalIft;
+    }
+
+    //todo move to db table for scalability
+    public string CurrencyToCountryName(string currency)
+    {
+        return currency switch
+        {
+            "KES" => "Kenya",
+            "UGX" => "Uganda",
+            "TZS" => "Tanzania",
+            _=>"Unknown"
+        };
+    }
+    
+    private async Task HandleFailedDisbursement(NcbaDisbursement disbursement, Transaction transaction, Recipient recipient)
+    {
+        var transactionRecord = transaction.TransactionRecord!;
+        disbursement.Status = TransactionStatuses.Failed;
+        disbursement.ResponseCode = "-1";
+        disbursement.ResponseDescription = "API Error";
+        recipient!.DisbursalStatuses = DisbursalStatuses.Failed;
+        
+        transactionRecord.Status = TransactionStatuses.Failed;
+        await _unitOfWork.SaveChangesAsync();
+        await _transactionManager.CreateReversal(transaction, transactionRecord.BusinessId!);
+        _backgroundJobClient.Enqueue<ICommunicatorService>(i => i.PublishNcbaDisbursementInfo(disbursement.Id));
+    }
+
+    private TransactionStatuses MapStatus(string ncbaStatus)
+    {
+        return ncbaStatus switch
+        {
+            "PASSED" => TransactionStatuses.Complete,
+            "PENDING" => TransactionStatuses.Pending,
+            "FAILED" => TransactionStatuses.Failed,
+        };
+    }
+
+    public async Task PesaLinkTransactionStatusGateway(string ncbaDisbursementId)
+    {
+        var ncbaDisbursement = await _unitOfWork.Repository<NcbaDisbursement>()
+            .GetFirstOrDefaultAsync(x => x.Id == ncbaDisbursementId, 
+                x => x.Recipient, 
+                x => x.Business, 
+                x=>x.Transaction,
+                x=>x.Transaction.TransactionRecord!);
+
+        if (ncbaDisbursement == null) return;
+        
+        try
+        {
+            var transactionAdviceResponse = await _ncbaGatewayApi.TransactionAdviceAsync(new TransactionAdviceRequest
+            {
+                TransactionId = ncbaDisbursement.NcbaTransactionReference!,
+            });
+
+            if (!transactionAdviceResponse.ErrorCode.Equals("000"))
+            {
+                await HandleFailedDisbursement(ncbaDisbursement, ncbaDisbursement.Transaction, ncbaDisbursement.Recipient);
+                return;
+            }
+
+            ncbaDisbursement.ThirdPartyReference = transactionAdviceResponse.FtReference;
+            ncbaDisbursement.Status = TransactionStatuses.Complete;
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogWarning("Api call to NCBA Gateway Pesalink status query failed with status code {statusCode} and content {content}", ex.StatusCode, ex.Content);
+            _backgroundJobClient.Schedule<NcbaService>(n=>n.QueryTransactionStatus(ncbaDisbursement.Id), TimeSpan.FromSeconds(30));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred when querying pesalink via NCBA Gateway"); 
+            _backgroundJobClient.Schedule<NcbaService>(n=>n.QueryTransactionStatus(ncbaDisbursement.Id), TimeSpan.FromSeconds(30));
+        }
+    }
+
+    public async Task QueryTransactionStatus(string ncbaDisbursementId)
+    {
+        //get ncbadisbursment using unit of work by its id
+        var ncbaDisbursement = await _unitOfWork.Repository<NcbaDisbursement>()
+            .GetFirstOrDefaultAsync(x => x.Id == ncbaDisbursementId, 
+                x => x.Recipient, 
+                x => x.Business, 
+                x=>x.Transaction,
+                x=>x.Transaction.TransactionRecord!);
+
+        if (ncbaDisbursement == null) return;
+
+        try
+        {
+            var response = await _ncbaApi.TransactionStatus(new NcbaTransactionStatusRequest
+            {
+                Country = ncbaDisbursement.Country,
+                ReferenceNumber = ncbaDisbursement.LocalReference!
+            }, _ncbaSettings.ApiKey);
+
+            if (response.Code.Equals("000"))
+            {
+                var ncbaTx = response.Transaction;
+                var status = MapStatus(ncbaTx.Status);
+                if (status == TransactionStatuses.Pending)
+                {
+                    _backgroundJobClient.Schedule<NcbaService>(n => n.QueryTransactionStatus(ncbaDisbursement.Id),
+                        TimeSpan.FromSeconds(30));
+                    return;
+                }
+
+                ncbaDisbursement.ThirdPartyReference = ncbaTx.ThirdPartyReference;
+                ncbaDisbursement.ThirdPartyStatus = ncbaTx.ThirdPartyStatus;
+                ncbaDisbursement.Status = status;
+
+                if (ncbaDisbursement.Status == TransactionStatuses.Complete && ncbaTx.ThirdPartyReference == null)
+                {
+                    ncbaDisbursement.ThirdPartyReference = ncbaTx.CbsReference;
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                if (ncbaDisbursement.Status == TransactionStatuses.Complete)
+                {
+                    _backgroundJobClient.Enqueue<ICommunicatorService>(i =>
+                        i.PublishNcbaDisbursementInfo(ncbaDisbursement.Id));
+                    return;
+                }
+
+                if (ncbaDisbursement.Status == TransactionStatuses.Failed)
+                {
+                    await HandleFailedDisbursement(ncbaDisbursement, ncbaDisbursement.Transaction, ncbaDisbursement.Recipient);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("NCBA transaction status failed with code {code} and description {description}", response.Code, response.Description);
+                _backgroundJobClient.Schedule<NcbaService>(n=>n.QueryTransactionStatus(ncbaDisbursement.Id), TimeSpan.FromSeconds(30));
+            }
+        }
+        catch (ApiException ex)
+        {
+           _logger.LogWarning("Api call to NCBA Transaction status query failed with status code {statusCode} and content {content}", ex.StatusCode, ex.Content);
+           _backgroundJobClient.Schedule<NcbaService>(n=>n.QueryTransactionStatus(ncbaDisbursement.Id), TimeSpan.FromSeconds(30));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred when disbursing funds via NCBA"); 
+            _backgroundJobClient.Schedule<NcbaService>(n=>n.QueryTransactionStatus(ncbaDisbursement.Id), TimeSpan.FromSeconds(30));
+        }
+    }
+}

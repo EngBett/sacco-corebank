@@ -21,15 +21,15 @@ public sealed class IdentitySeeder(IdentityDbContext db, UserService users, Role
     public static readonly (string Name, string Description, string[] Permissions)[] Roles =
     [
         ("Teller", "Front-office cash and deposits",
-            [Permissions.Members.View, Permissions.Savings.View, Permissions.Savings.Deposit, Permissions.Savings.Withdraw, Permissions.Loans.View, Permissions.Loans.Repay, Permissions.Payments.View, Permissions.Payments.Initiate]),
+            [Permissions.Members.View, Permissions.Members.Exit, Permissions.Savings.View, Permissions.Savings.Deposit, Permissions.Savings.Withdraw, Permissions.Loans.View, Permissions.Loans.Repay, Permissions.Payments.View, Permissions.Payments.Initiate]),
         ("Loan Officer", "Originates and appraises loans",
-            [Permissions.Members.View, Permissions.Members.Create, Permissions.Members.Edit, Permissions.Savings.View, Permissions.Loans.View, Permissions.Loans.Originate, Permissions.Loans.Appraise, Permissions.Ledger.View]),
+            [Permissions.Members.View, Permissions.Members.Create, Permissions.Members.Edit, Permissions.Members.Exit, Permissions.Members.SelfServiceManage, Permissions.Savings.View, Permissions.Loans.View, Permissions.Loans.Originate, Permissions.Loans.Appraise, Permissions.Loans.Restructure, Permissions.Ledger.View]),
         ("Credit Committee", "Approves loans (N-of-M committee)",
             [Permissions.Members.View, Permissions.Savings.View, Permissions.Loans.View, Permissions.Loans.Approve, Permissions.Ledger.View]),
         ("Branch Manager", "Approves journals, withdrawals, disbursements; reviews applications",
             [Permissions.Members.View, Permissions.Members.Create, Permissions.Members.Edit, Permissions.Members.Suspend, Permissions.Members.ApplicationsReview,
              Permissions.Savings.View, Permissions.Savings.AccountsOpen, Permissions.Savings.WithdrawalApprove, Permissions.Savings.DividendsApprove,
-             Permissions.Loans.View, Permissions.Loans.Approve, Permissions.Loans.Disburse, Permissions.Loans.Restructure, Permissions.Loans.ScoringManage,
+             Permissions.Members.ExitApprove, Permissions.Members.SelfServiceManage, Permissions.Loans.View, Permissions.Loans.Approve, Permissions.Loans.Disburse, Permissions.Loans.Restructure, Permissions.Loans.ScoringManage,
              Permissions.Ledger.View, Permissions.Ledger.JournalApprove, Permissions.Ledger.AccountsManage, Permissions.Payments.View, Permissions.Payments.Reconcile, Permissions.Reporting.View]),
         ("Accountant", "Maintains the GL and prepares journals",
             [Permissions.Ledger.View, Permissions.Ledger.JournalCreate, Permissions.Ledger.JournalReverse, Permissions.Ledger.ChartManage, Permissions.Savings.View, Permissions.Savings.ProductsManage, Permissions.Savings.DividendsDeclare,
@@ -57,14 +57,26 @@ public sealed class IdentitySeeder(IdentityDbContext db, UserService users, Role
     {
         var existingRoles = await db.Roles.ToDictionaryAsync(r => r.Name, ct);
         var created = 0;
+        var reconciled = 0;
         foreach (var (name, description, permissions) in Roles)
         {
-            if (existingRoles.ContainsKey(name)) continue;
+            if (existingRoles.TryGetValue(name, out var current))
+            {
+                // Demo bundles are the source of truth for the demo roles: new permissions reach an already-seeded database.
+                var target = permissions.Distinct().OrderBy(x => x).ToList();
+                if (!current.Permissions.Select(x => x.Permission).OrderBy(x => x).SequenceEqual(target))
+                {
+                    await roles.UpdateAsync(current.Id, current.Name, current.Description, target, DemoTenant.Users.System, ct);
+                    reconciled++;
+                }
+                continue;
+            }
             var role = await roles.CreateAsync(Ids.Deterministic($"role:{DemoTenant.Slug}:{name}"), name, description, permissions, DemoTenant.Users.System, isSystem: name == "System Admin", ct);
             existingRoles[name] = role;
             created++;
         }
         logger.Created("Roles", created);
+        if (reconciled > 0) logger.LogInformation("  Roles reconciled to the seed bundles: {Count}", reconciled);
 
         var existingUsers = await db.Users.Select(u => u.UserName).ToHashSetAsync(ct);
         created = 0;

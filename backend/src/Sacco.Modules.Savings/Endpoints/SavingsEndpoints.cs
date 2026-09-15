@@ -94,6 +94,19 @@ public sealed class SavingsEndpoints(IHostEnvironment env) : IModuleEndpoints
             return TypedResults.Created($"/api/savings/withdrawals/{w.Id}", ToResponse(w));
         }).RequirePermission(Permissions.Savings.Withdraw).WithName("RequestWithdrawal");
 
+        // ---- Member self-service ----
+        var self = app.MapGroup("/api/self").WithTags("Self-service");
+        self.MapGet("/accounts", async (SavingsDbContext db, ILedgerService ledger, ICurrentUser user, CancellationToken ct) =>
+        {
+            var memberId = user.RequireMemberId();
+            var rows = await db.Accounts.AsNoTracking().Where(a => a.MemberId == memberId).OrderBy(a => a.OpenedAt).ToListAsync(ct);
+            var result = new List<SavingsAccountResponse>();
+            foreach (var a in rows) result.Add(await ToResponse(a, ledger, ct));
+            return TypedResults.Ok(result);
+        }).RequirePermission(Permissions.Self.AccountsView).WithName("GetMyAccounts");
+        self.MapGet("/summary", async (SavingsService savings, ICurrentUser user, CancellationToken ct) => TypedResults.Ok(await savings.GetMemberSummaryAsync(user.RequireMemberId(), ct)))
+            .RequirePermission(Permissions.Self.AccountsView).WithName("GetMySavingsSummary");
+
         var withdrawals = app.MapGroup("/api/savings/withdrawals").WithTags("Withdrawals");
         withdrawals.MapGet("", async (SavingsDbContext db, WithdrawalStatus? status, int page = 1, int pageSize = 50, CancellationToken ct = default) =>
         {

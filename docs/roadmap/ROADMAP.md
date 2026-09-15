@@ -35,7 +35,7 @@ sandbox credentials only.
 - **Exit criterion**: can open a savings account, deposit, request a withdrawal (respecting
   notice-period rules), see FOSA vs BOSA correctly reflected in the ledger.
 
-## Phase 4 — Lending ✅ done (2026-09-11) — write-off/restructure and member-exit settlement deferred; credit scoring engine with sandbox CRB added 2026-09-14 (ADR 0010)
+## Phase 4 — Lending ✅ done (2026-09-11); write-off, restructuring, member-exit settlement, credit scoring (ADR 0010), bureau consent/retention and the daily accrual scheduler added 2026-09-14
 - Loan products, guarantor exposure tracking, approval workflow (maker-checker, N-of-M
   committee for larger amounts), disbursement into FOSA, provisioning/NPL aging (configurable).
 - Seed: loans across every aging bucket, a guarantor near their exposure cap, a pending
@@ -68,11 +68,14 @@ sandbox credentials only.
   in scope for the initial release.
 - Added 2026-09-14: shadcn `dashboard-01` shell, real-time in-app notifications (SignalR + hub tickets, ADR 0009) with
   a bell/inbox, and a light/dark/system theme toggle.
+- Added 2026-09-15: provider-agnostic outbound SMS/email (ADR 0012) — `Notifications:Sms:Provider` switches between
+  Africa's Talking, Twilio, WhatsApp, Safaricom, Airtel or a local mock with no code change; local dev now routes
+  through Mailpit and `mocked-providers/mocked-sms-server` by default instead of a silent sandbox stub.
 - **Exit criterion**: Demo SACCO's portal and public site both render correctly themed, every
   seeded role can log into the portal and see role-appropriate screens, a Turnstile-protected
   membership application submits successfully to a pending-review queue.
 
-## Phase 8 — Compliance hardening ✅ conditionally signed off (2026-09-12) — see `docs/compliance/phase8-signoff.md`; open findings F1/F2/F6 close during cutover
+## Phase 8 — Compliance hardening ✅ signed off (2026-09-12; F2/F3/F4/F5 closed 2026-09-14) — see `docs/compliance/phase8-signoff.md`; F1 (live providers) and F6 (SASRA figures) close during cutover via `docs/compliance/sasra-confirmation-register.md`
 - Audit logging completeness pass (every approval/denial/GL adjustment), maker-checker
   coverage audit, load testing on concurrent debit scenarios, security review of public
   surfaces.

@@ -75,6 +75,23 @@ curl -s -X POST http://localhost:5000/connect/token \
 
 Browser login (authorization code + PKCE, used by the portal BFF): `http://localhost:5000/account/login?tenant=demo`.
 
+## Member self-service
+
+Every verified demo member has a self-service login: phone number (e.g. `254700100001` for M00001) and PIN `2468`. The
+password grant accepts them like a staff login (`username=254700100001&password=2468`), and `/api/self/*` then returns only
+that member's profile, accounts, statements, loans and payments. Staff can enable or disable the login from the member page.
+
+## Write-off, restructuring and exit
+
+Sign in as `loanofficer` to request a write-off (LN-000005, the Loss-bucket loan) or a restructuring; `committee1` approves.
+As `teller`, request the exit of any verified member without loans or guarantees; `manager` approves it, which pays out every
+balance in cash or by bank transfer and closes the accounts. A member who still guarantees someone (M00011 guarantees LN-000008)
+is refused with `loans.exit.active_guarantees`.
+
+## SMS & email outbox
+
+Sandbox senders record every delivery on `notifications.outbound_messages`; `admin` sees them at `/admin/outbox`.
+
 ## Credit scoring
 
 The demo scorecard is the platform default (100 points across eight factors; approve ≥ 70, refer ≥ 50, decline when

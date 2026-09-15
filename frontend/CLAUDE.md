@@ -68,4 +68,6 @@ fetch calls against guessed endpoint shapes.
   Base UI error #31 at open time and takes the page down; the production build does not catch it, so open every menu once.
 - Credit scoring UI: `credit-score-card.tsx` (full factor breakdown on the loan page, `GradeBadge` in lists) and
   `scorecard-form.tsx` (client editor at `/loans/scoring`, shown read-only without `loans.scoring.manage`).
+- Loan page: write-off and restructuring requests with their approvals; member page: exit request/approve/decline and the
+  self-service PIN form; loan application form carries the bureau-consent checkbox; `/admin/outbox` lists SMS/email deliveries.
 - Verify with `npm run lint && npm run build` in each app; both must stay clean.

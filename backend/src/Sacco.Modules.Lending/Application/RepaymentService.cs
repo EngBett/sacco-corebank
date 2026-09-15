@@ -184,7 +184,8 @@ public sealed class RepaymentService(LendingDbContext db, ILedgerService ledger,
             var a = l.ArrearsAmount(clock.Today);
             if (a > 0) { arrears += a; inArrears++; }
         }
-        var guarantees = await db.Loans.AsNoTracking().Where(l => l.Status == LoanStatus.Active || l.Status == LoanStatus.Approved)
+        // Any accepted guarantee on a loan that is not yet closed holds the guarantor's deposits, including loans still awaiting approval.
+        var guarantees = await db.Loans.AsNoTracking().Where(l => l.Status == LoanStatus.Active || l.Status == LoanStatus.Approved || l.Status == LoanStatus.PendingApproval || l.Status == LoanStatus.Appraised || l.Status == LoanStatus.Applied)
             .SelectMany(l => l.Guarantors).Where(g => g.GuarantorMemberId == memberId && g.Status == GuarantorStatus.Accepted).ToListAsync(ct);
         return new MemberLoanExposure(memberId, outstanding, arrears, loans.Count, inArrears, guarantees.Sum(g => g.AmountGuaranteed), guarantees.Count);
     }

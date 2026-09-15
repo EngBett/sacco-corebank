@@ -62,7 +62,7 @@ public static class SeedRunner
         services.AddLendingModule(config, connectionString);
         services.AddPaymentsModule(config, connectionString);
         services.AddReportingModule(config, connectionString);
-        services.AddNotificationsModule(connectionString); // no realtime pusher: nobody is connected during seeding
+        services.AddNotificationsModule(config, connectionString); // no realtime pusher: nobody is connected during seeding; sandbox SMS/email land in the outbox
         services.AddSingleton<Wolverine.IMessageBus, SeedMessageBusStub>();
 
         services.AddScoped<ISeeder, TenantSeeder>();
@@ -93,6 +93,8 @@ public static class SeedRunner
             await scope.ServiceProvider.GetRequiredService<PaymentsDbContext>().Database.MigrateAsync(ct);
             await scope.ServiceProvider.GetRequiredService<ReportingDbContext>().Database.MigrateAsync(ct);
             await scope.ServiceProvider.GetRequiredService<NotificationsDbContext>().Database.MigrateAsync(ct);
+            // Defence in depth: the policies now bind the table owner too (the role the API and this tool run as).
+            await Sacco.Shared.Persistence.RowLevelSecurity.ForceTenantIsolationAsync(scope.ServiceProvider.GetRequiredService<PlatformDbContext>().Database.GetDbConnection(), ct);
         }
 
         using (var scope = provider.CreateScope())

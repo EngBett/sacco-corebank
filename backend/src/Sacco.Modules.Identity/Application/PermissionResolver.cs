@@ -20,7 +20,12 @@ public sealed class PermissionResolver(IdentityDbContext db, IMemoryCache cache)
         {
             e.AbsoluteExpirationRelativeToNow = Ttl;
             var active = await db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.TenantId == tenantId && u.IsActive, ct);
-            if (!active) return new HashSet<string>();
+            if (!active)
+            {
+                // Not a staff login: a member self-service login gets the fixed self-service set, nothing else.
+                var member = await db.MemberLogins.AsNoTracking().AnyAsync(l => l.Id == userId && l.TenantId == tenantId && l.IsActive, ct);
+                return member ? Permissions.Self.All.ToHashSet() : new HashSet<string>();
+            }
             var permissions = await db.Users.AsNoTracking()
                 .Where(u => u.Id == userId && u.TenantId == tenantId)
                 .SelectMany(u => u.Roles)

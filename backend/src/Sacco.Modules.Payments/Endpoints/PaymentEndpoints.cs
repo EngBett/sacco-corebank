@@ -9,6 +9,8 @@ using Sacco.Modules.Payments.Domain;
 using Sacco.Modules.Payments.Persistence;
 using Sacco.Modules.Payments.Providers;
 using Sacco.Shared.Auth;
+using Sacco.Shared.Ledger;
+using Sacco.Shared.Members;
 using Sacco.Shared.Domain;
 using Sacco.Shared.Http;
 using Sacco.Shared.Payments;
@@ -17,6 +19,7 @@ namespace Sacco.Modules.Payments.Endpoints;
 
 public sealed record InitiateCollectionRequest(string Provider, string PhoneNumber, decimal Amount, PaymentPurposeType Purpose, string? AccountNumber, string? LoanNumber, string? Narrative);
 public sealed record InitiateDisbursementRequest(Guid WithdrawalId, string? Provider);
+public sealed record SelfTopUpRequest(string Provider, decimal Amount, string AccountNumber, string? LoanNumber);
 public sealed record PaymentTransactionResponse(Guid Id, PaymentKind Kind, string Provider, PaymentStatus Status, decimal Amount, string Counterparty, Guid? MemberId, PaymentPurposeType PurposeType, string? AccountNumber, string? LoanNumber, Guid? WithdrawalId,
     string OurReference, string? ProviderRequestId, string? ProviderTransactionReference, string? FailureReason, Guid? LedgerJournalEntryId, Guid InitiatedByUserId, DateTimeOffset InitiatedAt, DateTimeOffset? CompletedAt, int CallbackCount, string? Narrative);
 public sealed record ProviderInfo(string Name, bool IsSandbox);
@@ -27,7 +30,7 @@ public sealed class PaymentEndpoints(IHostEnvironment env) : IModuleEndpoints
     {
         var g = app.MapGroup("/api/payments").WithTags("Payments");
 
-        g.MapGet("/providers", (PaymentProviderRegistry registry) => TypedResults.Ok(PaymentProviderRegistry.Known.Select(n => { var p = registry.Resolve(n); return new ProviderInfo(p.ProviderName, p.IsSandbox); }).ToList()))
+        g.MapGet("/providers", (PaymentProviderRegistry registry) => TypedResults.Ok(registry.Known.Select(n => { var p = registry.Resolve(n); return new ProviderInfo(p.ProviderName, p.IsSandbox); }).ToList()))
             .RequirePermission(Permissions.Payments.View).WithName("ListPaymentProviders");
 
         g.MapPost("/collections", async (InitiateCollectionRequest r, PaymentService payments, ICurrentUser user, CancellationToken ct) =>
@@ -35,6 +38,23 @@ public sealed class PaymentEndpoints(IHostEnvironment env) : IModuleEndpoints
             var tx = await payments.InitiateCollectionAsync(r.Provider, r.PhoneNumber, r.Amount, r.Purpose, r.AccountNumber, r.LoanNumber, r.Narrative, user.UserId, ct);
             return TypedResults.Created($"/api/payments/transactions/{tx.Id}", ToResponse(tx));
         }).RequirePermission(Permissions.Payments.Initiate).WithName("InitiateCollection");
+
+        // Member self-service: a mobile-money push to the member's own phone, into the member's own account or loan.
+        app.MapPost("/api/self/payments/topup", async (SelfTopUpRequest r, PaymentService payments, ILedgerService ledger, IMemberDirectory members, ICurrentUser user, CancellationToken ct) =>
+        {
+            var memberId = user.RequireMemberId();
+            var member = await members.FindAsync(memberId, ct) ?? throw new NotFoundException("Member", memberId);
+            var account = await ledger.FindAccountAsync(r.AccountNumber, ct);
+            if (account is null || account.MemberId != memberId) throw new NotFoundException("Account", r.AccountNumber);
+            var purpose = r.LoanNumber is null ? PaymentPurposeType.SavingsDeposit : PaymentPurposeType.LoanRepayment;
+            var tx = await payments.InitiateCollectionAsync(r.Provider, member.PhoneNumber, r.Amount, purpose, r.AccountNumber, r.LoanNumber, "Self-service top-up", user.UserId, ct);
+            return TypedResults.Created($"/api/payments/transactions/{tx.Id}", ToResponse(tx));
+        }).RequirePermission(Permissions.Self.PaymentsInitiate).WithTags("Self-service").WithName("SelfServiceTopUp");
+        app.MapGet("/api/self/payments", async (PaymentsDbContext db, ICurrentUser user, CancellationToken ct) =>
+        {
+            var memberId = user.RequireMemberId();
+            return TypedResults.Ok((await db.Transactions.AsNoTracking().Where(t => t.MemberId == memberId).OrderByDescending(t => t.InitiatedAt).Take(50).ToListAsync(ct)).Select(ToResponse).ToList());
+        }).RequirePermission(Permissions.Self.AccountsView).WithTags("Self-service").WithName("GetMyPayments");
 
         g.MapPost("/disbursements", async (InitiateDisbursementRequest r, PaymentService payments, ICurrentUser user, CancellationToken ct) =>
         {
@@ -72,6 +92,7 @@ public sealed class PaymentEndpoints(IHostEnvironment env) : IModuleEndpoints
             using var reader = new StreamReader(http.Request.Body);
             var body = await reader.ReadToEndAsync(ct);
             var headers = http.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString(), StringComparer.OrdinalIgnoreCase);
+            foreach (var q in http.Request.Query) headers[$"query:{q.Key}"] = q.Value.ToString(); // providers that cannot set headers put a shared secret in the callback URL
             var result = await processor.ProcessAsync(NormaliseProvider(provider), new WebhookPayload(body, headers, http.Connection.RemoteIpAddress?.ToString()), ct);
             return result.Accepted ? Results.Ok(new { result.Message, result.TransactionId }) : Results.BadRequest(new { result.Message });
         }).RequireRateLimiting("public").WithTags("Provider webhooks").WithName("ProviderWebhook");

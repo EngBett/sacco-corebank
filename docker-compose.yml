@@ -1,6 +1,7 @@
-# Local development stack. Only `postgres` runs by default; the other services are opt-in profiles.
-# Everything is sandbox: no production credentials exist anywhere in this file.
-#   docker compose up -d postgres
+# Local development stack. `postgres`, `mailpit` and `mocked-sms` run by default — the notification channels a locally
+# run API (`dotnet run --project backend/src/Sacco.Api`) needs, none of them requiring any credential; everything else
+# is an opt-in profile. Everything here is sandbox: no production credentials exist anywhere in this file.
+#   docker compose up -d postgres mailpit mocked-sms
 #   docker compose --profile app run --rm seed        # migrate + seed the Demo SACCO
 #   docker compose --profile app up -d api portal public-site
 services:
@@ -21,6 +22,24 @@ services:
       timeout: 3s
       retries: 10
 
+  # SMTP catcher for local dev/demo — Notifications:Email:Mode=Live points SmtpEmailSender at it (no auth, no TLS).
+  # Web inbox at http://localhost:8025. Swapping in a real provider (SES, SendGrid, a SACCO's own mail server) is only
+  # ever a Notifications:Email:Smtp:* config change; SmtpEmailSender itself is already provider-agnostic (plain SMTP).
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: sacco-mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  # Generic mock SMS gateway for local dev/demo — Notifications:Sms:Mode=Live + Sms:Provider=Mock points MockSmsSender
+  # at it. Web inbox at http://localhost:5108. See mocked-providers/README.md.
+  mocked-sms:
+    build: { context: mocked-providers/mocked-sms-server }
+    container_name: sacco-mocked-sms
+    ports:
+      - "5108:8080"
+
   seed:
     profiles: ["app"]
     build: { context: ., dockerfile: backend/Dockerfile, target: seed }
@@ -40,11 +59,21 @@ services:
       Database__MigrateOnStartup: "true"
       Tenancy__DefaultTenantSlug: demo
       Cors__AllowedOrigins__0: "http://localhost:3000"
+      Notifications__Sms__Mode: Live
+      Notifications__Sms__Provider: Mock
+      Notifications__Sms__Mock__BaseUrl: "http://mocked-sms:8080/"
+      Notifications__Email__Mode: Live
+      Notifications__Email__Smtp__Host: mailpit
+      Notifications__Email__Smtp__Port: "1025"
+      Notifications__Email__Smtp__UseStartTls: "false"
+      Lending__CreditBureau__Mode: Sandbox
       Payments__SandboxAutoCallbackSeconds: "5"
     ports:
       - "5000:8080"
     depends_on:
       postgres: { condition: service_healthy }
+      mailpit: { condition: service_started }
+      mocked-sms: { condition: service_started }
 
   portal:
     profiles: ["app"]
@@ -74,6 +103,47 @@ services:
     ports:
       - "3001:3001"
     depends_on: [api]
+
+  # ---- Provider mock servers (profile "mocks"): the platform's Live providers exercised end to end without any credentials.
+  # Start with: docker compose --profile mocks up -d   then run the API with the "Live against mocks" settings from
+  # mocked-providers/README.md (or docker compose --profile mocks --profile app up, which wires them automatically).
+  mocked-airtel:
+    profiles: ["mocks"]
+    build: { context: mocked-providers/mocked-airtel-server }
+    environment: { ASPNETCORE_URLS: "http://+:5101", Vault__VaultUri: "#" }
+    ports: ["5028:5101"]
+  mocked-equity:
+    profiles: ["mocks"]
+    build: { context: mocked-providers/mocked-equity-server }
+    environment: { ASPNETCORE_URLS: "http://+:5104", Jenga__CallbackDelaySecondsMin: "1", Jenga__CallbackDelaySecondsMax: "2" }
+    ports: ["5104:5104"]
+  mocked-ncba:
+    profiles: ["mocks"]
+    build: { context: mocked-providers/mocked-ncba }
+    ports: ["5103:5103"]
+  # The M-Pesa mock needs MongoDB and RabbitMQ (it queues callbacks) and takes its consumer key/secret from configuration.
+  # It connects to both on "localhost", so they share its network namespace.
+  mocked-mpesa:
+    profiles: ["mocks"]
+    build: { context: mocked-providers/mocked-mpesa-server }
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_URLS: "http://+:5100"
+      Vault__VaultUri: "#"
+      ConnectionStrings__MongoDB: "mongodb://localhost:27017"
+      MongoDB__DatabaseName: "mockedmpesa"
+      Credentials__ConsumerKey: "b2a9eb8e-9c1c-4a0d-9f1e-5b2c3d4e5f6g"
+      Credentials__ConsumerSecret: "c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s"
+      Credentials__BearerToken: "mock-mpesa-bearer-token"
+    ports: ["9998:5100"]
+  mocked-mpesa-mongo:
+    profiles: ["mocks"]
+    image: mongo:7
+    network_mode: "service:mocked-mpesa"
+  mocked-mpesa-rabbit:
+    profiles: ["mocks"]
+    image: rabbitmq:3-alpine
+    network_mode: "service:mocked-mpesa"
 
 volumes:
   sacco-pgdata:

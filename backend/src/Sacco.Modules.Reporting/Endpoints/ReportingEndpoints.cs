@@ -51,6 +51,12 @@ public sealed class ReportingEndpoints : IModuleEndpoints
             var ret = await svc.GetAsync(id, ct);
             return TypedResults.Ok(new StatutoryReturnDetail(Summary(ret), StatutoryReportService.Deserialize(ret.Package)));
         }).RequirePermission(Permissions.Reporting.View).WithName("GetStatutoryReturn");
+        r.MapGet("/{id:guid}/export.csv", async (Guid id, StatutoryReportService svc, CancellationToken ct) =>
+        {
+            var ret = await svc.GetAsync(id, ct);
+            var csv = StatutoryReturnCsv.Render(StatutoryReportService.Deserialize(ret.Package));
+            return Results.File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", $"sasra-return-{ret.PeriodEnd:yyyy-MM-dd}.csv");
+        }).RequirePermission(Permissions.Reporting.View).WithName("ExportStatutoryReturnCsv");
         r.MapPost("", async (GenerateReturnRequest req, StatutoryReportService svc, ICurrentUser user, CancellationToken ct) =>
         {
             var ret = await svc.GenerateAsync(req.PeriodStart, req.PeriodEnd, user.UserId, ct);

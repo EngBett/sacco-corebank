@@ -6,4 +6,8 @@
     <!-- Modules depend on Sacco.Shared contracts only — never on another module project. -->
     <ProjectReference Include="../Sacco.Shared/Sacco.Shared.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MailKit" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" />
+  </ItemGroup>
 </Project>

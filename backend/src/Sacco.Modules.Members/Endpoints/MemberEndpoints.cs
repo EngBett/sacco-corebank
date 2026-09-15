@@ -10,6 +10,7 @@ using Sacco.Modules.Members.Persistence;
 using Sacco.Shared.Auth;
 using Sacco.Shared.Http;
 using Sacco.Shared.Members;
+using Sacco.Shared.Savings;
 
 namespace Sacco.Modules.Members.Endpoints;
 
@@ -32,7 +33,11 @@ public sealed record KycDocumentDto(Guid Id, KycDocumentType Type, string FileRe
 public sealed record AddDocumentRequest(KycDocumentType Type, string FileReference);
 public sealed record ReasonRequest(string Reason);
 public sealed record MemberResponse(Guid Id, string MemberNumber, string FullName, PersonalDetailsDto Details, NextOfKinDto NextOfKin, KycStatus KycStatus, MemberSource Source, DateOnly JoinedAt,
-    Guid RegisteredByUserId, Guid? KycVerifiedByUserId, DateTimeOffset? KycVerifiedAt, string? KycRejectionReason, string? SuspensionReason, IReadOnlyList<KycDocumentDto> Documents);
+    Guid RegisteredByUserId, Guid? KycVerifiedByUserId, DateTimeOffset? KycVerifiedAt, string? KycRejectionReason, string? SuspensionReason, IReadOnlyList<KycDocumentDto> Documents,
+    Guid? ExitRequestedByUserId, DateTimeOffset? ExitRequestedAt, string? ExitReason, Guid? ExitApprovedByUserId, DateTimeOffset? ExitedAt, string? ExitSettlementJson, bool SelfServiceEnabled);
+public sealed record ApproveExitRequest(ExitPayoutChannel Channel);
+public sealed record EnableSelfServiceRequest(string Pin);
+public sealed record MyProfileResponse(Guid Id, string MemberNumber, string FullName, string PhoneNumber, string? Email, KycStatus KycStatus, DateOnly JoinedAt, NextOfKinDto NextOfKin);
 public sealed record MemberListItem(Guid Id, string MemberNumber, string FullName, string NationalIdNumber, string PhoneNumber, KycStatus KycStatus, DateOnly JoinedAt);
 
 public sealed record SubmitApplicationRequest(PersonalDetailsDto Details, NextOfKinDto NextOfKin, string TurnstileToken);
@@ -71,11 +76,31 @@ public sealed class MemberEndpoints : IModuleEndpoints
             return TypedResults.Ok(new PagedResult<MemberListItem>(items, page, pageSize, total));
         }).RequirePermission(Permissions.Members.View).WithName("ListMembers");
 
-        g.MapGet("/{id:guid}", async Task<Results<Ok<MemberResponse>, NotFound>> (Guid id, MembersDbContext db, CancellationToken ct) =>
+        g.MapGet("/{id:guid}", async Task<Results<Ok<MemberResponse>, NotFound>> (Guid id, MembersDbContext db, MemberService members, CancellationToken ct) =>
         {
             var m = await db.Members.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
-            return m is null ? TypedResults.NotFound() : TypedResults.Ok(ToResponse(m));
+            return m is null ? TypedResults.NotFound() : TypedResults.Ok(ToResponse(m, await members.IsSelfServiceEnabledAsync(id, ct)));
         }).RequirePermission(Permissions.Members.View).WithName("GetMember");
+
+        // ---- Exit (maker-checker): request → settle loans from deposits, pay out balances, close accounts ----
+        g.MapPost("/{id:guid}/exit/request", async (Guid id, ReasonRequest req, MemberService members, ICurrentUser user, CancellationToken ct) => TypedResults.Ok(ToResponse(await members.RequestExitAsync(id, req.Reason, user.UserId, ct))))
+            .RequirePermission(Permissions.Members.Exit).WithName("RequestMemberExit");
+        g.MapPost("/{id:guid}/exit/cancel", async (Guid id, ReasonRequest req, MemberService members, ICurrentUser user, CancellationToken ct) => TypedResults.Ok(ToResponse(await members.CancelExitAsync(id, req.Reason, user.UserId, ct))))
+            .RequirePermission(Permissions.Members.ExitApprove).WithName("CancelMemberExit");
+        g.MapPost("/{id:guid}/exit/approve", async (Guid id, ApproveExitRequest req, MemberService members, ICurrentUser user, CancellationToken ct) => TypedResults.Ok(ToResponse(await members.ApproveExitAsync(id, req.Channel, user.UserId, ct))))
+            .RequirePermission(Permissions.Members.ExitApprove).WithName("ApproveMemberExit");
+
+        // ---- Self-service login (phone + PIN) ----
+        g.MapPost("/{id:guid}/self-service", async (Guid id, EnableSelfServiceRequest req, MemberService members, ICurrentUser user, CancellationToken ct) => { await members.EnableSelfServiceAsync(id, req.Pin, user.UserId, ct); return TypedResults.NoContent(); })
+            .RequirePermission(Permissions.Members.SelfServiceManage).WithName("EnableMemberSelfService");
+        g.MapDelete("/{id:guid}/self-service", async (Guid id, MemberService members, ICurrentUser user, CancellationToken ct) => { await members.DisableSelfServiceAsync(id, user.UserId, ct); return TypedResults.NoContent(); })
+            .RequirePermission(Permissions.Members.SelfServiceManage).WithName("DisableMemberSelfService");
+
+        app.MapGet("/api/self/profile", async (MembersDbContext db, ICurrentUser user, CancellationToken ct) =>
+        {
+            var m = await db.Members.AsNoTracking().FirstAsync(x => x.Id == user.RequireMemberId(), ct);
+            return TypedResults.Ok(new MyProfileResponse(m.Id, m.MemberNumber, m.Details.FullName, m.Details.PhoneNumber, m.Details.Email, m.KycStatus, m.JoinedAt, NextOfKinDto.From(m.NextOfKin)));
+        }).RequirePermission(Permissions.Self.ProfileView).WithTags("Self-service").WithName("GetMyProfile");
 
         g.MapGet("/by-number/{memberNumber}", async Task<Results<Ok<MemberResponse>, NotFound>> (string memberNumber, MembersDbContext db, CancellationToken ct) =>
         {
@@ -151,9 +176,10 @@ public sealed class MemberEndpoints : IModuleEndpoints
         }).RequireRateLimiting("public").WithTags("Public").WithName("SubmitMembershipApplication");
     }
 
-    private static MemberResponse ToResponse(Member m) => new(m.Id, m.MemberNumber, m.Details.FullName, PersonalDetailsDto.From(m.Details), NextOfKinDto.From(m.NextOfKin), m.KycStatus, m.Source, m.JoinedAt,
+    private static MemberResponse ToResponse(Member m, bool selfService = false) => new(m.Id, m.MemberNumber, m.Details.FullName, PersonalDetailsDto.From(m.Details), NextOfKinDto.From(m.NextOfKin), m.KycStatus, m.Source, m.JoinedAt,
         m.RegisteredByUserId, m.KycVerifiedByUserId, m.KycVerifiedAt, m.KycRejectionReason, m.SuspensionReason,
-        m.Documents.Select(d => new KycDocumentDto(d.Id, d.Type, d.FileReference, d.UploadedByUserId, d.UploadedAt)).ToList());
+        m.Documents.Select(d => new KycDocumentDto(d.Id, d.Type, d.FileReference, d.UploadedByUserId, d.UploadedAt)).ToList(),
+        m.ExitRequestedByUserId, m.ExitRequestedAt, m.ExitReason, m.ExitApprovedByUserId, m.ExitedAt, m.ExitSettlementJson, selfService);
 
     private static ApplicationResponse ToResponse(MembershipApplication a) => new(a.Id, PersonalDetailsDto.From(a.Details), NextOfKinDto.From(a.NextOfKin), a.Status, a.SubmittedAt, a.Channel, a.ReviewedByUserId, a.ReviewedAt, a.ReviewNotes, a.CreatedMemberId);
 }

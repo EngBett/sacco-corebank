@@ -32,6 +32,10 @@
     <!-- Auth (Apache-2.0) — Open.IdentityServer, never Duende (ADR 0005) -->
     <PackageVersion Include="Open.IdentityServer" Version="2.0.0" />
 
+    <!-- Notification channels (MIT) -->
+    <PackageVersion Include="MailKit" Version="4.13.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.12" />
+
     <!-- Seed / fake data (MIT) -->
     <PackageVersion Include="Bogus" Version="35.6.5" />
 

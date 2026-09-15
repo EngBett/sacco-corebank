@@ -19,19 +19,21 @@ public sealed class TenantConnectionInterceptor(ITenantContext tenant) : DbConne
     public override async Task ConnectionOpenedAsync(DbConnection connection, ConnectionEndEventData eventData, CancellationToken cancellationToken = default)
         => await ApplyAsync(connection, cancellationToken);
 
+    // Pooled connections keep session settings between uses, so an unresolved tenant clears the setting rather
+    // than leaving the previous request's tenant in place: with FORCE RLS such a query sees no tenant rows at all.
+    private string Statement => tenant.HasTenant ? $"SET {SettingName} = '{tenant.TenantId:D}'" : $"SET {SettingName} = ''";
+
     private void Apply(DbConnection connection)
     {
-        if (!tenant.HasTenant) return;
         using var cmd = connection.CreateCommand();
-        cmd.CommandText = $"SET {SettingName} = '{tenant.TenantId:D}'";
+        cmd.CommandText = Statement;
         cmd.ExecuteNonQuery();
     }
 
     private async Task ApplyAsync(DbConnection connection, CancellationToken ct)
     {
-        if (!tenant.HasTenant) return;
         await using var cmd = connection.CreateCommand();
-        cmd.CommandText = $"SET {SettingName} = '{tenant.TenantId:D}'";
+        cmd.CommandText = Statement;
         await cmd.ExecuteNonQueryAsync(ct);
     }
 }

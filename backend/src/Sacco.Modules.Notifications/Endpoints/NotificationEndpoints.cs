@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Sacco.Modules.Notifications.Application;
+using Sacco.Modules.Notifications.Domain;
 using Sacco.Modules.Notifications.Realtime;
 using Sacco.Shared.Auth;
 using Sacco.Shared.Http;
@@ -46,6 +47,14 @@ public sealed class NotificationEndpoints(string corsPolicy) : IModuleEndpoints
             var ticket = await issuer.IssueAsync(user.UserId, user.UserName, tenant.TenantId, tenant.TenantSlug, ct);
             return TypedResults.Ok(new HubTicketResponse(ticket.Token, ticket.ExpiresAt, NotificationsHub.Path));
         }).WithName("IssueNotificationHubTicket");
+
+        // Outbox: what went out by SMS/email, and retries. Admin surface — it shows other people's addresses.
+        var outbox = app.MapGroup("/api/notifications/outbox").WithTags("Notifications outbox");
+        outbox.MapGet("", async (OutboundDispatcher dispatcher, OutboundStatus? status, int page = 1, int pageSize = 50, CancellationToken ct = default) => TypedResults.Ok(await dispatcher.ListAsync(status, page, pageSize, ct)))
+            .RequirePermission(Permissions.Admin.AuditView).WithName("ListOutboundMessages");
+        outbox.MapGet("/channels", (OutboundDispatcher dispatcher) => TypedResults.Ok(dispatcher.Info)).RequirePermission(Permissions.Admin.AuditView).WithName("GetNotificationChannels");
+        outbox.MapPost("/{id:guid}/retry", async (Guid id, OutboundDispatcher dispatcher, CancellationToken ct) => TypedResults.Ok(await dispatcher.RetryAsync(id, ct)))
+            .RequirePermission(Permissions.Admin.ConfigManage).WithName("RetryOutboundMessage");
 
         app.MapHub<NotificationsHub>(NotificationsHub.Path).RequireCors(corsPolicy);
     }

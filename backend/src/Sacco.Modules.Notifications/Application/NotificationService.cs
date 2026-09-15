@@ -16,7 +16,7 @@ namespace Sacco.Modules.Notifications.Application;
 /// notification is never lost because nobody was online; pushing after commit means a live session
 /// never sees something the database will not confirm on the next page load.
 /// </summary>
-public sealed class NotificationService(NotificationsDbContext db, IUserDirectory users, INotificationPusher pusher, ITenantContext tenant, IClock clock, ILogger<NotificationService> logger) : INotifier
+public sealed class NotificationService(NotificationsDbContext db, IUserDirectory users, INotificationPusher pusher, OutboundDispatcher outbound, ITenantContext tenant, IClock clock, ILogger<NotificationService> logger) : INotifier
 {
     public async Task NotifyAsync(NotificationRequest request, CancellationToken ct)
     {
@@ -34,7 +34,10 @@ public sealed class NotificationService(NotificationsDbContext db, IUserDirector
 
         // Every recipient's row has the same content; the id differs per recipient, so push each one so the client can mark it read.
         foreach (var row in rows)
+        {
             await pusher.PushAsync(tenant.TenantId, [row.RecipientUserId], ToResponse(row), ct);
+            await outbound.DispatchAsync(row, ct); // SMS/email; failures land on the outbox row, never here
+        }
     }
 
     private async Task<IReadOnlyList<Guid>> ResolveRecipientsAsync(NotificationRequest request, CancellationToken ct)

@@ -78,6 +78,14 @@ public sealed class LedgerEndpoints : IModuleEndpoints
             return statement is null ? TypedResults.NotFound() : TypedResults.Ok(statement);
         }).RequirePermission(Permissions.Ledger.View).WithName("GetAccountStatement");
 
+        app.MapGet("/api/self/statements/{accountNumber}", async Task<Results<Ok<AccountStatement>, NotFound>> (string accountNumber, LedgerQueries queries, ILedgerService ledger, IClock clock, ICurrentUser user, DateOnly? from, DateOnly? to, CancellationToken ct) =>
+        {
+            var account = await ledger.FindAccountAsync(accountNumber, ct);
+            if (account is null || account.MemberId != user.RequireMemberId()) return TypedResults.NotFound(); // another member's account is invisible, not forbidden
+            var statement = await queries.StatementAsync(accountNumber, from ?? clock.Today.AddMonths(-3), to ?? clock.Today, ct);
+            return statement is null ? TypedResults.NotFound() : TypedResults.Ok(statement);
+        }).RequirePermission(Permissions.Self.StatementsView).WithTags("Self-service").WithName("GetMyStatement");
+
         g.MapPost("/accounts/{accountNumber}/status", async (string accountNumber, LedgerAccountStatus status, ILedgerService ledger, ICurrentUser user, CancellationToken ct) =>
         {
             await ledger.SetAccountStatusAsync(accountNumber, status, user.UserId, ct);

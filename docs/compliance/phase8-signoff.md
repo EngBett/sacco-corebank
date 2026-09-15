@@ -23,12 +23,12 @@ by an integration test that a reviewer can run with `dotnet test --project backe
 
 | # | Severity | Finding | Fix |
 |---|---|---|---|
-| F1 | Medium | Live M-Pesa (`DarajaMpesaProvider`) is written against the published Daraja API but has never been exercised against a Safaricom sandbox account. Airtel Money and bank live providers do not exist (registry throws a clear error in Live mode). | Verify against Daraja sandbox before Phase 9; implement Airtel/bank providers per the pilot SACCO's contracts. |
-| F2 | Medium | RLS is enabled but not `FORCE`d, so a database owner/superuser bypasses it (intended for migrations and local dev). | In production, run the API as a non-owner role (`infrastructure/README.md` should provision one) — tracked as a Phase 9 cutover step. |
-| F3 | Low | No audit event for guarantor decline and GL account creation. | Add `loans.guarantor.declined` and `ledger.gl_account.created` events. |
-| F4 | Low | Member exit settlement, loan write-off and restructuring are not implemented (documented in `backend/CLAUDE.md`). | Build behind maker-checker when scheduled; `ILendingService.GetMemberExposureAsync` already exists for the exit check. |
-| F5 | Low | Load testing of concurrent debits is an integration test (40 parallel requests), not a sustained load test. | Add a k6 scenario against a staging environment before go-live. |
-| F6 | Info | SASRA figures (provisioning schedule, liquidity weighting, large-exposure limit, SDGF basis, submission format) are encoded defaults with source notes, not confirmed values. | Confirm with SASRA; update configuration, not code. |
+| F1 | Medium | **Closed for code, open for credentials (2026-09-14):** live providers exist for M-Pesa (`DarajaMpesaProvider`), Airtel Money (`AirtelMoneyProvider`), Equity/Jenga (`EquityJengaProvider`) and NCBA (`NcbaProvider`), each unit-tested through a fake gateway and driven end to end against the mock servers under `mocked-providers/` (M-Pesa STK push and B2C, Airtel USSD push, Equity C2B with callbacks, synchronous NCBA payouts). | Repeat `mocked-providers/e2e/run-local.sh` against each provider's UAT environment with the pilot SACCO's credentials before go-live; the only remaining unknown is drift between mock and live gateway. |
+| F2 | Medium | ~~RLS is enabled but not `FORCE`d~~ **Closed 2026-09-14 (ADR 0011):** policies are forced after every migration run and the connection interceptor fails closed; the integration suite asserts an untenanted connection sees no rows. | — |
+| F3 | Low | ~~No audit event for guarantor decline and GL account creation.~~ **Closed 2026-09-14:** `loans.guarantor.declined` and `ledger.gl_account.created` are recorded. | — |
+| F4 | Low | ~~Member exit settlement, loan write-off and restructuring are not implemented.~~ **Closed 2026-09-14:** all three are maker-checker workflows with GL postings and integration tests. | — |
+| F5 | Low | ~~Load testing is a 40-request integration test.~~ **Closed 2026-09-14:** `backend/tests/load/concurrent-debits.js` (k6) runs sustained parallel withdrawals against one account and fails on any overdraw; it is a cutover checklist step against staging. | — |
+| F6 | Info | SASRA figures are encoded defaults with source notes, not confirmed values. | Tracked item by item in `sasra-confirmation-register.md` (owner, evidence, date); the CSV export (`/api/reporting/statutory-returns/{id}/export.csv`) covers the submission format until the portal format is confirmed. |
 
 ## Sign-off
 

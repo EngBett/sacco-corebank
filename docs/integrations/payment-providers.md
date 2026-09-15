@@ -69,7 +69,30 @@ unchanged from prior knowledge)
 
 - Contract: `Sacco.Shared.Payments.IPaymentProvider`; providers: `SandboxMpesaProvider`, `SandboxAirtelMoneyProvider`,
   `SandboxBankProvider` (default everywhere), `DarajaMpesaProvider` (live M-Pesa; selected by `Payments:MPesa:Mode=Live`).
-  Airtel Money and bank live implementations are still to be written against the current provider documentation.
+  `AirtelMoneyProvider` (live Airtel Money; `Payments:AirtelMoney:Mode=Live`), written from the shape of a working
+  integration kept under `reference/Brij.AirtelMoney` (OAuth2 client credentials, USSD push `merchant/v1/payments/`,
+  enquiry `standard/v1/payments/{id}`, B2C `standard/v2/disbursements/` with the PIN RSA-encrypted under Airtel's public key,
+  `X-Country`/`X-Currency` headers, national MSISDNs, snake_case JSON, `status_code` TS/TF/TIP callbacks). Verify against the
+  Airtel UAT sandbox (`https://openapiuat.airtel.africa/`) before go-live. Configuration: `ClientId`, `ClientSecret`, `Country`,
+  `Currency`, `DisbursementPin`, `DisbursementPublicKey`, `CallbackToken` (the callback URL registered with Airtel is
+  `…/api/payments/webhooks/{tenant}/airtelmoney?token=<CallbackToken>`; TIP callbacks are answered 400 so Airtel retries with the
+  final status).
+- Bank providers are keyed by code under `Payments:Banks:{CODE}` and selected as `Bank:{CODE}`; `Payments:DefaultBankProvider`
+  names the one used for bank-transfer withdrawals. Payout destinations are `BANKCODE|ACCOUNT|BENEFICIARY NAME|BRANCH`
+  (later parts optional) or a bare account/phone number.
+  - `EquityJengaProvider` (`Bank:EQUITY`, Finserve Jenga DFS Partner REST APIs v1.0.8 — `integrations/DFS Jenga…md`): merchant
+    token via `Api-Key` header with an absolute expiry, C2B buy-goods collections, B2C payouts, PIN sent AES-256-GCM encrypted
+    under the API key (`IV‖SALT‖CIPHER‖TAG`, PBKDF2-HMAC-SHA256 × 65 536), request ids `shortCode_reference`, status query by
+    request id, success/failure callbacks with different shapes. Settings: `AuthBaseUrl`, `ApiKey`, `MerchantCode`,
+    `ConsumerSecret`, `ShortCode`, `Pin`, `CallbackBaseUrl`, `CallbackToken`.
+  - `NcbaProvider` (`Bank:NCBA`, NCBA Payments API — `integrations/sample-ncbagateway apis.txt`): a single synchronous transfer
+    call (`API-Key`/`API-User` headers) for Pesalink, Internal, EFT, RTGS and Mwallet; the receipt comes back in the response,
+    so the saga finalises immediately (`DisbursementResult.Completed`). References are 12 characters derived from ours.
+    Payout only. Settings: `ApiKey`, `ApiUser`, `DefaultBankCode`, `DefaultBranchCode`.
+- Daraja request fields are Pascal-case (`BusinessShortCode`, `CallBackURL`) and the provider serialises them as such; responses
+  and callbacks are read case-insensitively because Daraja's own casing is inconsistent (`errorMessage` vs `ResponseCode`).
+- Every live provider is exercised end to end against the mock gateways under `mocked-providers/` (see its README and
+  `mocked-providers/e2e/run-local.sh`): USSD/STK push → callback → ledger posting, and synchronous bank payouts.
 - Idempotency: `payments.processed_provider_transactions` has a unique index on (provider, provider transaction reference);
   `PaymentFinalizer` inserts there *before* any ledger posting, so a replayed webhook is a detected no-op.
 - Callback URL per SACCO: `POST /api/payments/webhooks/{tenantSlug}/{mpesa|airtelmoney|bank:CODE}`. The tenant is resolved from

@@ -41,6 +41,27 @@ variable "default_tenant_slug" {
   type    = string
   default = ""
 }
+variable "enable_redis_backplane" {
+  type        = bool
+  default     = false
+  description = "Provision ElastiCache Redis as the SignalR backplane. Required before desired_count > 1."
+}
+variable "redis_node_type" {
+  type    = string
+  default = "cache.t4g.micro"
+}
+variable "sms_mode" {
+  type    = string
+  default = "Sandbox"
+}
+variable "email_mode" {
+  type    = string
+  default = "Sandbox"
+}
+variable "credit_bureau_mode" {
+  type    = string
+  default = "Sandbox"
+}
 variable "webhook_allowed_cidrs" {
   type    = list(string)
   default = []
@@ -263,6 +284,10 @@ locals {
     { name = "IdentityServer__Clients__0__PostLogoutRedirectUris__0", value = "https://${local.portal_host}/" },
     { name = "Cors__AllowedOrigins__0", value = "https://${local.portal_host}" },
     { name = "Cors__AllowedOrigins__1", value = "https://*.${local.portal_host}" },
+    { name = "Notifications__Redis", value = var.enable_redis_backplane ? "${aws_elasticache_replication_group.redis[0].primary_endpoint_address}:6379,ssl=true,abortConnect=false" : "" },
+    { name = "Notifications__Sms__Mode", value = var.sms_mode },
+    { name = "Notifications__Email__Mode", value = var.email_mode },
+    { name = "Lending__CreditBureau__Mode", value = var.credit_bureau_mode },
     { name = "IdentityServer__Clients__1__ClientId", value = "mobile" },
     { name = "IdentityServer__Clients__1__GrantTypes__0", value = "code" },
     { name = "IdentityServer__Clients__1__RequireClientSecret", value = "false" },
@@ -368,3 +393,43 @@ resource "aws_ecs_service" "this" {
 output "app_security_group_id" { value = aws_security_group.app.id }
 output "alb_dns_name" { value = aws_lb.this.dns_name }
 output "ecr_repository_urls" { value = { for k, r in aws_ecr_repository.this : k => r.repository_url } }
+
+# ---- Optional Redis backplane so SignalR pushes reach every API task (ADR 0009) ----
+resource "aws_elasticache_subnet_group" "redis" {
+  count      = var.enable_redis_backplane ? 1 : 0
+  name       = "${var.name}-redis"
+  subnet_ids = var.private_subnet_ids
+}
+
+resource "aws_security_group" "redis" {
+  count  = var.enable_redis_backplane ? 1 : 0
+  name   = "${var.name}-redis"
+  vpc_id = var.vpc_id
+  ingress {
+    from_port       = 6379
+    to_port         = 6379
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app.id]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_elasticache_replication_group" "redis" {
+  count                      = var.enable_redis_backplane ? 1 : 0
+  replication_group_id       = substr("${var.name}-redis", 0, 40)
+  description                = "SignalR backplane for ${var.name}"
+  engine                     = "redis"
+  node_type                  = var.redis_node_type
+  num_cache_clusters         = var.environment == "production" ? 2 : 1
+  automatic_failover_enabled = var.environment == "production"
+  at_rest_encryption_enabled = true
+  transit_encryption_enabled = true
+  subnet_group_name          = aws_elasticache_subnet_group.redis[0].name
+  security_group_ids         = [aws_security_group.redis[0].id]
+  port                       = 6379
+}

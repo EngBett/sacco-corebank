@@ -4,6 +4,38 @@
  */
 
 export interface paths {
+    "/api/self/statements/{accountNumber}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMyStatement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMyProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/public/membership-applications": {
         parameters: {
             query?: never;
@@ -44,6 +76,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["ListPublicLoanProducts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/payments/topup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SelfServiceTopUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMyPayments"];
         put?: never;
         post?: never;
         delete?: never;
@@ -532,6 +596,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/members/{id}/exit/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RequestMemberExit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{id}/exit/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CancelMemberExit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{id}/exit/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ApproveMemberExit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{id}/self-service": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EnableMemberSelfService"];
+        delete: operations["DisableMemberSelfService"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/members/by-number/{memberNumber}": {
         parameters: {
             query?: never;
@@ -798,6 +926,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["RequestWithdrawal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMyAccounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMySavingsSummary"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1092,6 +1252,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/loans/{id}/write-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RequestLoanWriteOff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/{id}/restructure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RequestLoanRestructure"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/{id}/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListLoanAdjustments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/adjustments/{adjustmentId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ApproveLoanAdjustment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/adjustments/{adjustmentId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RejectLoanAdjustment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/bureau-consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetBureauConsentText"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/maintenance/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RunLendingMaintenance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/loans/{id}/score": {
         parameters: {
             query?: never;
@@ -1262,6 +1534,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["AccrueLoanInterest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/loans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMyLoans"];
+        put?: never;
+        post: operations["ApplyForMyLoan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/loans/bureau-consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMyBureauConsentText"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1652,6 +1956,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reporting/statutory-returns/{id}/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ExportStatutoryReturnCsv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reporting/statutory-returns/{id}/submit": {
         parameters: {
             query?: never;
@@ -1758,6 +2078,54 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["IssueNotificationHubTicket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/outbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListOutboundMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/outbox/channels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetNotificationChannels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/outbox/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RetryOutboundMessage"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1893,6 +2261,8 @@ export interface components {
             termMonths: number | string;
             purpose: string;
             disbursementAccountNumber: null | string;
+            /** @default false */
+            bureauConsent: boolean;
         };
         /** @enum {unknown} */
         ApprovalDecision: "Approve" | "Reject";
@@ -1903,6 +2273,9 @@ export interface components {
             notes: null | string;
             /** Format: date-time */
             decidedAt: string;
+        };
+        ApproveExitRequest: {
+            channel: components["schemas"]["ExitPayoutChannel"];
         };
         AuditLogResponse: {
             /** Format: uuid */
@@ -1916,6 +2289,10 @@ export interface components {
             actorUserId: string;
             details: null | string;
             correlationId: null | string;
+        };
+        BureauConsentInfo: {
+            required: boolean;
+            text: string;
         };
         /** @enum {unknown} */
         BureauStatus: "Clear" | "Listed" | "Unavailable";
@@ -1938,6 +2315,14 @@ export interface components {
         ChangePasswordRequest: {
             currentPassword: string;
             newPassword: string;
+        };
+        ChannelInfo: {
+            sms: string;
+            smsSandbox: boolean;
+            email: string;
+            emailSandbox: boolean;
+            smsKindPrefixes: string[];
+            emailEnabled: boolean;
         };
         CreateGlAccountRequest: {
             code: string;
@@ -2156,8 +2541,13 @@ export interface components {
             /** Format: double */
             existingOutstanding: number | string;
         };
+        EnableSelfServiceRequest: {
+            pin: string;
+        };
         /** @enum {unknown} */
         EntryDirection: "Debit" | "Credit";
+        /** @enum {unknown} */
+        ExitPayoutChannel: "Cash" | "BankTransfer";
         FactorScore: {
             key: string;
             label: string;
@@ -2357,7 +2747,7 @@ export interface components {
         /** @enum {unknown} */
         KycDocumentType: "NationalIdFront" | "NationalIdBack" | "PassportPhoto" | "Signature" | "ProofOfIncome" | "KraPinCertificate";
         /** @enum {unknown} */
-        KycStatus: "PendingVerification" | "Verified" | "Rejected" | "Suspended" | "Exited";
+        KycStatus: "PendingVerification" | "Verified" | "Rejected" | "Suspended" | "Exited" | "ExitRequested";
         LargeExposure: {
             /** Format: uuid */
             memberId: string;
@@ -2414,6 +2804,39 @@ export interface components {
             ratio: components["schemas"]["Ratio"];
             source: string;
         };
+        /** @enum {unknown} */
+        LoanAdjustmentKind: "WriteOff" | "Restructure";
+        LoanAdjustmentResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            loanId: string;
+            loanNumber: string;
+            kind: components["schemas"]["LoanAdjustmentKind"];
+            status: components["schemas"]["LoanAdjustmentStatus"];
+            reason: string;
+            /** Format: uuid */
+            requestedByUserId: string;
+            /** Format: date-time */
+            requestedAt: string;
+            /** Format: uuid */
+            decidedByUserId: null | string;
+            /** Format: date-time */
+            decidedAt: null | string;
+            decisionNotes: null | string;
+            /** Format: int32 */
+            newTermMonths: null | number | string;
+            /** Format: int32 */
+            newInterestRateBps: null | number | string;
+            /** Format: double */
+            principalWrittenOff: null | number | string;
+            /** Format: double */
+            interestReversed: null | number | string;
+            /** Format: uuid */
+            journalEntryId: null | string;
+        };
+        /** @enum {unknown} */
+        LoanAdjustmentStatus: "PendingApproval" | "Approved" | "Rejected";
         LoanListItem: {
             /** Format: uuid */
             id: string;
@@ -2522,9 +2945,23 @@ export interface components {
             approvals: components["schemas"]["ApprovalResponse"][];
             schedule: components["schemas"]["InstallmentResponse"][];
             creditScore: null | components["schemas"]["CreditScoreSummary"];
+            /** Format: date-time */
+            bureauConsentAt: null | string;
+            /** Format: int32 */
+            restructureCount: number | string;
+            adjustments: components["schemas"]["LoanAdjustmentResponse"][];
         };
         /** @enum {unknown} */
         LoanStatus: "Applied" | "Appraised" | "PendingApproval" | "Approved" | "Active" | "Closed" | "Rejected" | "Cancelled" | "WrittenOff";
+        MaintenanceRunResult: {
+            /** Format: int32 */
+            tenants: number | string;
+            /** Format: int32 */
+            interestAccruals: number | string;
+            /** Format: int32 */
+            bureauDetailsPurged: number | string;
+            errors: string[];
+        };
         MarkAllReadResponse: {
             /** Format: int32 */
             marked: number | string;
@@ -2539,6 +2976,33 @@ export interface components {
             kycStatus: components["schemas"]["KycStatus"];
             /** Format: date */
             joinedAt: string;
+        };
+        MemberLoanSnapshot: {
+            /** Format: uuid */
+            id: string;
+            loanNumber: string;
+            productCode: string;
+            /** Format: double */
+            amount: number | string;
+            status: components["schemas"]["LoanStatus"];
+            /** Format: double */
+            outstandingPrincipal: number | string;
+            /** Format: double */
+            arrearsAmount: number | string;
+            /** Format: int32 */
+            daysInArrears: number | string;
+            /** Format: date */
+            nextDueDate: null | string;
+            /** Format: double */
+            nextDueAmount: number | string;
+            /** Format: date */
+            disbursementDate: null | string;
+            /** Format: int32 */
+            termMonths: number | string;
+            /** Format: int32 */
+            interestRateBps: number | string;
+            /** Format: date-time */
+            appliedAt: string;
         };
         MemberOutstandingSnapshot: {
             /** Format: uuid */
@@ -2568,6 +3032,36 @@ export interface components {
             kycRejectionReason: null | string;
             suspensionReason: null | string;
             documents: components["schemas"]["KycDocumentDto"][];
+            /** Format: uuid */
+            exitRequestedByUserId: null | string;
+            /** Format: date-time */
+            exitRequestedAt: null | string;
+            exitReason: null | string;
+            /** Format: uuid */
+            exitApprovedByUserId: null | string;
+            /** Format: date-time */
+            exitedAt: null | string;
+            exitSettlementJson: null | string;
+            selfServiceEnabled: boolean;
+        };
+        MemberSavingsSummary: {
+            /** Format: uuid */
+            memberId: string;
+            /** Format: double */
+            bosaDeposits: number | string;
+            /** Format: double */
+            shares: number | string;
+            /** Format: double */
+            fosaBalance: number | string;
+            /** Format: double */
+            fixedDeposits: number | string;
+            /** Format: int32 */
+            monthsWithContributions: number | string;
+            /** Format: date */
+            firstContributionDate: null | string;
+            fosaAccountNumber: null | string;
+            bosaDepositAccountNumber: null | string;
+            sharesAccountNumber: null | string;
         };
         /** @enum {unknown} */
         MemberSource: "StaffRegistered" | "PublicApplication" | "Migrated";
@@ -2580,6 +3074,20 @@ export interface components {
             tenantSlug: string;
             roles: string[];
             permissions: string[];
+        };
+        /** @enum {unknown} */
+        MessageChannel: "Sms" | "Email";
+        MyProfileResponse: {
+            /** Format: uuid */
+            id: string;
+            memberNumber: string;
+            fullName: string;
+            phoneNumber: string;
+            email: null | string;
+            kycStatus: components["schemas"]["KycStatus"];
+            /** Format: date */
+            joinedAt: string;
+            nextOfKin: components["schemas"]["NextOfKinDto"];
         };
         NextOfKinDto: {
             name: string;
@@ -2614,6 +3122,29 @@ export interface components {
             principal: number | string;
             fromAccountNumber: string;
         };
+        OutboundMessageResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            notificationId: null | string;
+            /** Format: uuid */
+            recipientUserId: string;
+            channel: components["schemas"]["MessageChannel"];
+            address: string;
+            subject: null | string;
+            body: string;
+            status: components["schemas"]["OutboundStatus"];
+            providerReference: null | string;
+            error: null | string;
+            /** Format: int32 */
+            attempts: number | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            sentAt: null | string;
+        };
+        /** @enum {unknown} */
+        OutboundStatus: "Queued" | "Sent" | "Failed";
         PagedResultOfApplicationResponse: {
             items: components["schemas"]["ApplicationResponse"][];
             /** Format: int32 */
@@ -2661,6 +3192,15 @@ export interface components {
         };
         PagedResultOfNotificationResponse: {
             items: components["schemas"]["NotificationResponse"][];
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+            /** Format: int32 */
+            totalCount: number | string;
+        };
+        PagedResultOfOutboundMessageResponse: {
+            items: components["schemas"]["OutboundMessageResponse"][];
             /** Format: int32 */
             page: number | string;
             /** Format: int32 */
@@ -2930,7 +3470,7 @@ export interface components {
             reason: string;
         };
         /** @enum {unknown} */
-        RepaymentChannel: "FosaAccount" | "Cash" | "MPesa" | "AirtelMoney" | "BankTransfer" | "CheckOff";
+        RepaymentChannel: "FosaAccount" | "Cash" | "MPesa" | "AirtelMoney" | "BankTransfer" | "CheckOff" | "DepositsOffset";
         RepaymentResult: {
             /** Format: uuid */
             journalEntryId: string;
@@ -2964,6 +3504,13 @@ export interface components {
         };
         ResetPasswordRequest: {
             newPassword: string;
+        };
+        RestructureRequest: {
+            /** Format: int32 */
+            newTermMonths: number | string;
+            /** Format: int32 */
+            newInterestRateBps: null | number | string;
+            reason: string;
         };
         /** @enum {unknown} */
         ReturnStatus: "Generated" | "Submitted" | "Withdrawn";
@@ -3061,6 +3608,22 @@ export interface components {
         };
         /** @enum {unknown} */
         Segment: "Fosa" | "Bosa";
+        SelfApplyLoanRequest: {
+            productCode: string;
+            /** Format: double */
+            amount: number | string;
+            /** Format: int32 */
+            termMonths: number | string;
+            purpose: string;
+            bureauConsent: boolean;
+        };
+        SelfTopUpRequest: {
+            provider: string;
+            /** Format: double */
+            amount: number | string;
+            accountNumber: string;
+            loanNumber: null | string;
+        };
         SetProvisioningConfigRequest: {
             buckets: components["schemas"]["AgingBucketDraft"][];
             source: null | string;
@@ -3307,6 +3870,58 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    GetMyStatement: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                accountNumber: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountStatement"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GetMyProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyProfileResponse"];
+                };
+            };
+        };
+    };
     SubmitMembershipApplication: {
         parameters: {
             query?: never;
@@ -3365,6 +3980,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicLoanProduct"][];
+                };
+            };
+        };
+    };
+    SelfServiceTopUp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelfTopUpRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentTransactionResponse"];
+                };
+            };
+        };
+    };
+    GetMyPayments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentTransactionResponse"][];
                 };
             };
         };
@@ -4248,6 +4907,128 @@ export interface operations {
             };
         };
     };
+    RequestMemberExit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+        };
+    };
+    CancelMemberExit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+        };
+    };
+    ApproveMemberExit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApproveExitRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+        };
+    };
+    EnableMemberSelfService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnableSelfServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DisableMemberSelfService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     GetMemberByNumber: {
         parameters: {
             query?: never;
@@ -4690,6 +5471,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WithdrawalResponse"];
+                };
+            };
+        };
+    };
+    GetMyAccounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavingsAccountResponse"][];
+                };
+            };
+        };
+    };
+    GetMySavingsSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberSavingsSummary"];
                 };
             };
         };
@@ -5194,6 +6015,172 @@ export interface operations {
             };
         };
     };
+    RequestLoanWriteOff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanAdjustmentResponse"];
+                };
+            };
+        };
+    };
+    RequestLoanRestructure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestructureRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanAdjustmentResponse"];
+                };
+            };
+        };
+    };
+    ListLoanAdjustments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanAdjustmentResponse"][];
+                };
+            };
+        };
+    };
+    ApproveLoanAdjustment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                adjustmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanAdjustmentResponse"];
+                };
+            };
+        };
+    };
+    RejectLoanAdjustment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                adjustmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanAdjustmentResponse"];
+                };
+            };
+        };
+    };
+    GetBureauConsentText: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BureauConsentInfo"];
+                };
+            };
+        };
+    };
+    RunLendingMaintenance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceRunResult"];
+                };
+            };
+        };
+    };
     GetLoanCreditScore: {
         parameters: {
             query?: never;
@@ -5483,6 +6470,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnonymousTypeOfint"];
+                };
+            };
+        };
+    };
+    GetMyLoans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberLoanSnapshot"][];
+                };
+            };
+        };
+    };
+    ApplyForMyLoan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelfApplyLoanRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberLoanSnapshot"];
+                };
+            };
+        };
+    };
+    GetMyBureauConsentText: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BureauConsentInfo"];
                 };
             };
         };
@@ -6120,6 +7171,26 @@ export interface operations {
             };
         };
     };
+    ExportStatutoryReturnCsv: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     SubmitStatutoryReturn: {
         parameters: {
             query?: never;
@@ -6274,6 +7345,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HubTicketResponse"];
+                };
+            };
+        };
+    };
+    ListOutboundMessages: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["OutboundStatus"];
+                page?: number | string;
+                pageSize?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfOutboundMessageResponse"];
+                };
+            };
+        };
+    };
+    GetNotificationChannels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelInfo"];
+                };
+            };
+        };
+    };
+    RetryOutboundMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutboundMessageResponse"];
                 };
             };
         };

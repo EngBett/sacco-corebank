@@ -148,8 +148,15 @@ public sealed class SavingsWorkflowTests(PostgresFixture pg) : IDisposable
     [Fact]
     public async Task Dividend_declaration_is_maker_checker_and_posts_appropriation_then_pays_net_of_wht()
     {
-        var declared = await (await Accountant.PostAsJsonAsync("/api/savings/dividends", new DeclareDividendRequest(2024, 500, 400))).ReadAs<DividendResponse>();
-        declared.Status.ShouldBe(DividendStatus.Declared);
+        // Basis is the average daily balance over the year: FY2024 predates the seeded history (nothing to pay) and the
+        // current year has not ended. The seed declares FY2025; the checker steps run on that declaration.
+        var tooEarly = await Accountant.PostAsJsonAsync("/api/savings/dividends", new DeclareDividendRequest(2024, 500, 400));
+        tooEarly.StatusCode.ShouldBe(HttpStatusCode.UnprocessableEntity);
+        (await tooEarly.Content.ReadAsStringAsync()).ShouldContain("savings.dividend.nothing_to_pay");
+        var open = await Accountant.PostAsJsonAsync("/api/savings/dividends", new DeclareDividendRequest(DateTime.UtcNow.Year, 500, 400));
+        open.StatusCode.ShouldBe(HttpStatusCode.UnprocessableEntity);
+        (await open.Content.ReadAsStringAsync()).ShouldContain("savings.dividend.year_open");
+        var declared = (await (await Accountant.GetAsync("/api/savings/dividends")).ReadAs<List<DividendResponse>>()).Single(d => d.FinancialYear == 2025 && d.Status == DividendStatus.Declared);
         declared.Lines.ShouldNotBeEmpty();
         declared.TotalWithholdingTax.ShouldBeGreaterThan(0);
 

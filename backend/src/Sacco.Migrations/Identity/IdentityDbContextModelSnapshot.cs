@@ -23,6 +23,79 @@ namespace Sacco.Migrations.Identity
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Sacco.Modules.Identity.Domain.MemberLogin", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("display_name");
+
+                    b.Property<int>("FailedAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("failed_attempts");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<DateTimeOffset?>("LastLoginAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_login_at");
+
+                    b.Property<DateTimeOffset?>("LockedOutUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_out_until");
+
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("member_id");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("phone_number");
+
+                    b.Property<string>("PinHash")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("pin_hash");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_member_logins");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_member_logins_tenant_id");
+
+                    b.HasIndex("TenantId", "MemberId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_member_logins_tenant_id_member_id");
+
+                    b.HasIndex("TenantId", "PhoneNumber")
+                        .HasDatabaseName("ix_member_logins_tenant_id_phone_number");
+
+                    b.ToTable("member_logins", "identity");
+                });
+
             modelBuilder.Entity("Sacco.Modules.Identity.Domain.PersistedGrantRecord", b =>
                 {
                     b.Property<string>("Key")

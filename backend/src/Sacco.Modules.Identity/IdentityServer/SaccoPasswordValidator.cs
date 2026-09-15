@@ -10,7 +10,7 @@ namespace Sacco.Modules.Identity.IdentityServer;
 /// possibly the mobile app's native login). The tenant comes from the extra `tenant` form
 /// field or from acr_values=tenant:&lt;slug&gt;.
 /// </summary>
-public sealed class SaccoPasswordValidator(UserService users, ITenantLookup tenants) : IResourceOwnerPasswordValidator
+public sealed class SaccoPasswordValidator(UserService users, MemberLoginService memberLogins, ITenantLookup tenants) : IResourceOwnerPasswordValidator
 {
     public async Task ValidateAsync(ResourceOwnerPasswordValidationContext context)
     {
@@ -28,13 +28,18 @@ public sealed class SaccoPasswordValidator(UserService users, ITenantLookup tena
         }
 
         var user = await users.AuthenticateAsync(tenant.Value.Id, context.UserName, context.Password, CancellationToken.None);
-        if (user is null)
+        if (user is not null)
         {
-            context.Result = new GrantValidationResult(TokenRequestErrors.InvalidGrant, "invalid credentials");
+            context.Result = new GrantValidationResult(user.Id.ToString(), "pwd", SubjectClaims.For(tenant.Value.Id, tenant.Value.Slug), "local");
             return;
         }
-
-        context.Result = new GrantValidationResult(user.Id.ToString(), "pwd", SubjectClaims.For(tenant.Value.Id, tenant.Value.Slug), "local");
+        var member = await memberLogins.AuthenticateAsync(tenant.Value.Id, context.UserName, context.Password, CancellationToken.None);
+        if (member is not null)
+        {
+            context.Result = new GrantValidationResult(member.LoginId.ToString(), "pin", SubjectClaims.ForMember(tenant.Value.Id, tenant.Value.Slug, member.MemberId), "local");
+            return;
+        }
+        context.Result = new GrantValidationResult(TokenRequestErrors.InvalidGrant, "invalid credentials");
     }
 }
 
@@ -46,6 +51,9 @@ public static class SubjectClaims
         new("tenant_id", tenantId.ToString()),
         new(IdentityServerConfig.TenantClaim, slug),
     ];
+
+    public const string MemberIdClaim = "member_id";
+    public static IEnumerable<Claim> ForMember(Guid tenantId, string slug, Guid memberId) => [.. For(tenantId, slug), new Claim(MemberIdClaim, memberId.ToString())];
 }
 
 /// <summary>Minimal tenant lookup the Identity module needs; implemented over the Platform module's directory in the host.</summary>

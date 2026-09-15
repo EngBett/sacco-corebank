@@ -15,9 +15,10 @@ public static class ProviderNames
 }
 
 public sealed record CollectionRequest(Guid TenantId, string OurReference, string PhoneNumber, decimal Amount, string AccountReference, string Description);
-public sealed record CollectionResult(bool Accepted, string? ProviderRequestId, string? FailureReason);
+/// <param name="Completed">True when the provider settled the request synchronously (no callback will follow); <paramref name="ProviderTransactionReference"/> is then the receipt.</param>
+public sealed record CollectionResult(bool Accepted, string? ProviderRequestId, string? FailureReason, bool Completed = false, string? ProviderTransactionReference = null);
 public sealed record DisbursementRequest(Guid TenantId, string OurReference, string Destination, decimal Amount, string Description);
-public sealed record DisbursementResult(bool Accepted, string? ProviderRequestId, string? FailureReason);
+public sealed record DisbursementResult(bool Accepted, string? ProviderRequestId, string? FailureReason, bool Completed = false, string? ProviderTransactionReference = null);
 public sealed record TransactionStatus(ProviderTransactionState State, string? ProviderTransactionReference, decimal? Amount, string? FailureReason);
 public sealed record WebhookPayload(string Body, IReadOnlyDictionary<string, string> Headers, string? RemoteIp);
 

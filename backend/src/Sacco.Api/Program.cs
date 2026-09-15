@@ -94,7 +94,7 @@ builder.Services.AddSavingsModule(builder.Configuration, connectionString);
 builder.Services.AddLendingModule(builder.Configuration, connectionString);
 builder.Services.AddPaymentsModule(builder.Configuration, connectionString);
 builder.Services.AddReportingModule(builder.Configuration, connectionString);
-builder.Services.AddNotificationsModule(connectionString).AddNotificationsRealtime(PortalCorsPolicy);
+builder.Services.AddNotificationsModule(builder.Configuration, connectionString).AddNotificationsRealtime(PortalCorsPolicy, builder.Configuration["Notifications:Redis"]);
 builder.Services.AddLendingScheduler(); // daily interest accrual + bureau retention purge (Lending:Maintenance)
 
 // Messaging & sagas: Wolverine (MIT), scoped to payment-provider orchestration (ADR 0003).
@@ -117,6 +117,7 @@ if (app.Configuration.GetValue("Database:MigrateOnStartup", false) && !PaymentsM
     await scope.ServiceProvider.GetRequiredService<PaymentsDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<ReportingDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<NotificationsDbContext>().Database.MigrateAsync();
+    await Sacco.Shared.Persistence.RowLevelSecurity.ForceTenantIsolationAsync(scope.ServiceProvider.GetRequiredService<PlatformDbContext>().Database.GetDbConnection());
 }
 
 app.MapOpenApi();
