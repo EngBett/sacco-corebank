@@ -80,6 +80,8 @@ public static class Permissions
         public const string View = "reporting.view";
         public const string StatutoryGenerate = "reporting.statutory.generate";
         public const string StatutorySubmit = "reporting.statutory.submit";
+        /// <summary>Set who receives the nightly branded PDF digest and trigger it on demand (ADR 0013).</summary>
+        public const string RecipientsManage = "reporting.recipients.manage";
     }
 
     public static class Admin
@@ -138,6 +140,7 @@ public static class Permissions
         new(Reporting.View, "View reports"),
         new(Reporting.StatutoryGenerate, "Generate SASRA statutory returns"),
         new(Reporting.StatutorySubmit, "Mark statutory returns as submitted"),
+        new(Reporting.RecipientsManage, "Set recipients for the nightly PDF digest and send it on demand"),
 
         new(Admin.UsersManage, "Manage staff users"),
         new(Admin.RolesManage, "Manage roles and permission bundles"),

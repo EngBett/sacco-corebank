@@ -5,6 +5,11 @@
     "description": "Core banking API for Kenyan Deposit-Taking SACCOs. Pass the tenant slug in the X-Tenant header when not resolving by host. Tokens are issued by the in-process OIDC server at /connect/*.",
     "version": "v1"
   },
+  "servers": [
+    {
+      "url": "http://localhost:5000/"
+    }
+  ],
   "paths": {
     "/api/self/statements/{accountNumber}": {
       "get": {
@@ -4746,6 +4751,114 @@
         }
       }
     },
+    "/api/reporting/daily-digest/recipients": {
+      "get": {
+        "tags": [
+          "Daily digest"
+        ],
+        "operationId": "ListDigestRecipients",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReportRecipientResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Daily digest"
+        ],
+        "operationId": "AddDigestRecipient",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddRecipientRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportRecipientResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reporting/daily-digest/recipients/{id}": {
+      "delete": {
+        "tags": [
+          "Daily digest"
+        ],
+        "operationId": "RemoveDigestRecipient",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/reporting/daily-digest/preview.pdf": {
+      "get": {
+        "tags": [
+          "Daily digest"
+        ],
+        "operationId": "PreviewDailyDigest",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/reporting/daily-digest/run": {
+      "post": {
+        "tags": [
+          "Daily digest"
+        ],
+        "operationId": "RunDailyDigestNow",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DigestResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/notifications": {
       "get": {
         "tags": [
@@ -5071,6 +5184,21 @@
               "string"
             ],
             "format": "double"
+          }
+        }
+      },
+      "AddRecipientRequest": {
+        "required": [
+          "email",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
           }
         }
       },
@@ -6391,6 +6519,33 @@
               "string"
             ],
             "format": "double"
+          }
+        }
+      },
+      "DigestResult": {
+        "required": [
+          "sent",
+          "recipientCount",
+          "error"
+        ],
+        "type": "object",
+        "properties": {
+          "sent": {
+            "type": "boolean"
+          },
+          "recipientCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "error": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -10638,6 +10793,35 @@
           }
         }
       },
+      "ReportRecipientResponse": {
+        "required": [
+          "id",
+          "email",
+          "name",
+          "isActive",
+          "addedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "ReportSection": {
         "required": [
           "title",
@@ -12221,6 +12405,9 @@
     },
     {
       "name": "Statutory returns"
+    },
+    {
+      "name": "Daily digest"
     },
     {
       "name": "Notifications"

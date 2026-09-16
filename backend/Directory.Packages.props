@@ -36,6 +36,13 @@
     <PackageVersion Include="MailKit" Version="4.13.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.12" />
 
+    <!-- PDF generation (MIT wrapper; drives Chromium — BSD) — real HTML/CSS rendering for the nightly
+         digest (ADR 0013). Chosen over DinkToPdf/wkhtmltopdf (LGPL native binary, engine frozen since
+         ~2020) for rendering fidelity and maintenance, and over QuestPDF (revenue-gated commercial
+         license above the free tier — the MassTransit risk ADR 0003 already flagged, not repeated here)
+         because the brief was specifically an HTML-to-PDF tool. -->
+    <PackageVersion Include="PuppeteerSharp" Version="25.11.0" />
+
     <!-- Seed / fake data (MIT) -->
     <PackageVersion Include="Bogus" Version="35.6.5" />
 

@@ -15,7 +15,17 @@ public static class ReportingModule
         services.AddModuleDbContext<ReportingDbContext>(connectionString, ReportingDbContext.SchemaName);
         services.Configure<ReportingSettings>(configuration.GetSection(ReportingSettings.SectionName));
         services.AddScoped<StatutoryReportService>();
+        services.AddScoped<DailyDigestService>();
+        services.AddSingleton<HtmlToPdfRenderer>();
         services.AddSingleton<IModuleEndpoints, ReportingEndpoints>();
+        return services;
+    }
+
+    /// <summary>Nightly PDF digest (ADR 0013, <c>Reporting:DailyDigest</c>). API host only — mirrors <c>AddLendingScheduler</c>.</summary>
+    public static IServiceCollection AddReportingScheduler(this IServiceCollection services)
+    {
+        services.AddSingleton<DailyDigestScheduler>();
+        services.AddHostedService(sp => sp.GetRequiredService<DailyDigestScheduler>());
         return services;
     }
 }

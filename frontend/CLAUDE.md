@@ -70,4 +70,7 @@ fetch calls against guessed endpoint shapes.
   `scorecard-form.tsx` (client editor at `/loans/scoring`, shown read-only without `loans.scoring.manage`).
 - Loan page: write-off and restructuring requests with their approvals; member page: exit request/approve/decline and the
   self-service PIN form; loan application form carries the bureau-consent checkbox; `/admin/outbox` lists SMS/email deliveries.
+- `/admin/reports` (ADR 0013): recipients for the nightly branded PDF digest, a "Preview PDF" link (`src/app/api/reporting/
+  daily-digest/preview/route.ts`, the one BFF route that streams a binary body via `apiRaw()` in `lib/api.ts` rather than the
+  JSON-only `api()` helper) and a "Send now" action.
 - Verify with `npm run lint && npm run build` in each app; both must stay clean.

@@ -7,6 +7,7 @@ using Sacco.Modules.Notifications.Persistence;
 using Sacco.Shared.Auth;
 using Sacco.Shared.Domain;
 using Sacco.Shared.Http;
+using Sacco.Shared.Notifications;
 using Sacco.Shared.Tenancy;
 using Sacco.Shared.Time;
 
@@ -51,7 +52,8 @@ public sealed class OutboundDispatcher(NotificationsDbContext db, IUserDirectory
         {
             var reference = row.Channel == MessageChannel.Sms
                 ? await sms.SendAsync(row.Address, row.Body, ct)
-                : await email.SendAsync(row.Address, row.Subject ?? "Notification", row.Body, ct);
+                // The stored row.Body is plain text (shown verbatim in the admin outbox); wrap it into HTML only at the SMTP boundary.
+                : await email.SendAsync(row.Address, row.Subject ?? "Notification", System.Net.WebUtility.HtmlEncode(row.Body).Replace("\n", "<br/>"), null, ct);
             row.MarkSent(reference, clock.UtcNow);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

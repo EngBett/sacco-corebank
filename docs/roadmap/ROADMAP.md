@@ -71,6 +71,9 @@ sandbox credentials only.
 - Added 2026-09-15: provider-agnostic outbound SMS/email (ADR 0012) — `Notifications:Sms:Provider` switches between
   Africa's Talking, Twilio, WhatsApp, Safaricom, Airtel or a local mock with no code change; local dev now routes
   through Mailpit and `mocked-providers/mocked-sms-server` by default instead of a silent sandbox stub.
+- Added 2026-09-16: nightly branded PDF digest (ADR 0013) — capital adequacy, liquidity and portfolio quality rendered
+  to PDF via headless Chromium (PuppeteerSharp) at midnight and emailed to admin-configured recipients; `IEmailSender`
+  is now a Shared contract with attachment support, and Admin → Daily PDF digest previews/sends it on demand.
 - **Exit criterion**: Demo SACCO's portal and public site both render correctly themed, every
   seeded role can log into the portal and see role-appropriate screens, a Turnstile-protected
   membership application submits successfully to a pending-review queue.

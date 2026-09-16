@@ -51,6 +51,17 @@ without losing in-flight transaction state.
 - **Daily maintenance:** `Lending:Maintenance:RunAtUtc` (default 02:00) drives interest accrual and bureau purges; confirm one run in the logs after the first night.
 - **SASRA figures:** work through `docs/compliance/sasra-confirmation-register.md`; the first statutory package must show an empty `OpenItems`.
 - **Row-level security** is forced automatically after migrations; no separate database role is required for isolation (ADR 0011).
+
+## Added 2026-09-16
+
+- **Nightly PDF digest (ADR 0013):** confirm `docker build` installed system Chromium in the `api` image (`backend/Dockerfile`,
+  `apt-get install chromium`) and that `Reporting:DailyDigest:ChromiumExecutablePath=/usr/bin/chromium` is set — production must
+  never fall back to PuppeteerSharp's own runtime download. Task memory was raised to 1536 MB
+  (`infrastructure/modules/app/main.tf`) for Chromium's headroom; if a custom deployment sizes the container itself, keep that
+  margin. Add recipients from Admin → Daily PDF digest (`reporting.recipients.manage`) before the first night — a tenant with
+  none configured is silently skipped, not an error. Verify with the page's "Preview PDF" (no email sent) and "Send now"
+  (sends through whatever `Notifications:Email:Mode` is already configured to) before relying on the midnight run;
+  `Reporting:DailyDigest:RunAtUtc` defaults to midnight UTC — set it explicitly if the SACCO wants local midnight instead.
 - **Airtel Money live:** set `Payments:AirtelMoney:Mode=Live`, `BaseUrl=https://openapi.airtel.africa/`, `ClientId`/`ClientSecret`,
   `Country=KE`, `Currency=KES`, and for payouts `DisbursementPin` + `DisbursementPublicKey` (from the Airtel merchant portal), all
   from the secrets manager. Register the callback URL `https://<api>/api/payments/webhooks/<tenant>/airtelmoney?token=<CallbackToken>`

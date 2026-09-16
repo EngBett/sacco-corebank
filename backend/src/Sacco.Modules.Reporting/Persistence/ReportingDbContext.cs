@@ -10,6 +10,7 @@ public class ReportingDbContext(DbContextOptions<ReportingDbContext> options, IT
     public const string SchemaName = "reporting";
     public override string Schema => SchemaName;
     public DbSet<StatutoryReturn> Returns => Set<StatutoryReturn>();
+    public DbSet<ReportRecipient> Recipients => Set<ReportRecipient>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -23,6 +24,14 @@ public class ReportingDbContext(DbContextOptions<ReportingDbContext> options, IT
             b.Property(r => r.SubmissionReference).HasMaxLength(100);
             b.Property(r => r.WithdrawalReason).HasMaxLength(500);
             b.Property(r => r.Status).HasConversion<int>();
+        });
+        mb.Entity<ReportRecipient>(b =>
+        {
+            b.ToTable("report_recipients");
+            b.HasKey(r => r.Id);
+            b.HasIndex(r => new { r.TenantId, r.Email }).IsUnique();
+            b.Property(r => r.Email).HasMaxLength(320);
+            b.Property(r => r.Name).HasMaxLength(200);
         });
         base.OnModelCreating(mb);
     }

@@ -135,6 +135,14 @@ tenant query filter and snake_case naming.
   passed, and the submitter must differ from the generator. `OpenItems` in every package lists what still needs SASRA confirmation.
 - Historical dates: aging/provisioning use each loan's ledger statement closing balance as of the date, so a return for a past
   period end reconciles to that day's trial balance.
+- Nightly PDF digest (ADR 0013): `DailyDigestScheduler` (API host only, `Reporting:DailyDigest`, default midnight UTC) mirrors
+  `LendingMaintenanceService`'s per-tenant-DI-scope shape. `DailyDigestHtml` + `HtmlToPdfRenderer` (headless Chromium via
+  PuppeteerSharp — production points it at the system Chromium in `backend/Dockerfile` via
+  `Reporting:DailyDigest:ChromiumExecutablePath`) turn the same figures `StatutoryReportService` already computes into a
+  branded PDF, sent through the Shared `IEmailSender` (attachment-capable, `Sacco.Shared.Notifications` — Reporting depends on
+  it exactly like it depends on `INotifier`, never on the Notifications module directly). Recipients are plain
+  `ReportRecipient` rows (`Permissions.Reporting.RecipientsManage`), not staff users — a board member needs no portal login to
+  receive the email. `/api/reporting/daily-digest/preview.pdf` and `/run` let an admin see or send today's digest on demand.
 
 ## Member self-service (ADR 0008)
 

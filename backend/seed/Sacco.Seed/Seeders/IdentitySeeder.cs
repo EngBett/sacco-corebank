@@ -36,9 +36,9 @@ public sealed class IdentitySeeder(IdentityDbContext db, UserService users, Role
              Permissions.Loans.View, Permissions.Loans.ProductsManage, Permissions.Loans.ProvisioningManage, Permissions.Payments.View, Permissions.Payments.Reconcile, Permissions.Reporting.View, Permissions.Reporting.StatutoryGenerate]),
         ("Compliance Officer", "KYC verification, audit and statutory reporting",
             [Permissions.Members.View, Permissions.Members.KycVerify, Permissions.Members.ApplicationsReview, Permissions.Savings.View, Permissions.Loans.View, Permissions.Ledger.View,
-             Permissions.Admin.AuditView, Permissions.Reporting.View, Permissions.Reporting.StatutoryGenerate, Permissions.Reporting.StatutorySubmit]),
+             Permissions.Admin.AuditView, Permissions.Reporting.View, Permissions.Reporting.StatutoryGenerate, Permissions.Reporting.StatutorySubmit, Permissions.Reporting.RecipientsManage]),
         ("System Admin", "Users, roles, tenant settings",
-            [Permissions.Admin.UsersManage, Permissions.Admin.RolesManage, Permissions.Admin.TenantManage, Permissions.Admin.AuditView, Permissions.Admin.ConfigManage, Permissions.Members.View, Permissions.Ledger.View]),
+            [Permissions.Admin.UsersManage, Permissions.Admin.RolesManage, Permissions.Admin.TenantManage, Permissions.Admin.AuditView, Permissions.Admin.ConfigManage, Permissions.Members.View, Permissions.Ledger.View, Permissions.Reporting.View, Permissions.Reporting.RecipientsManage]),
     ];
 
     public static readonly (Guid Id, string UserName, string DisplayName, string Email, string Role)[] Users =

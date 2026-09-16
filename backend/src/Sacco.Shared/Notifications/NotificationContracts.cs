@@ -26,6 +26,22 @@ public sealed record NotificationRequest(
     NotificationAudience Audience,
     Guid ActorUserId);
 
+/// <summary>
+/// Outbound email, usable by any module (not just the Notifications module's own per-notification dispatch).
+/// Implemented by the Notifications module (sandbox by default, SMTP via MailKit when
+/// <c>Notifications:Email:Mode=Live</c> — see ADR 0012); a module that needs to email something — a report,
+/// a statement — depends on this Shared contract, never on Notifications' internal sender types.
+/// </summary>
+public interface IEmailSender
+{
+    string Name { get; }
+    bool IsSandbox { get; }
+    Task<string?> SendAsync(string to, string subject, string bodyHtml, IReadOnlyList<EmailAttachment>? attachments, CancellationToken ct);
+}
+
+/// <param name="ContentType">MIME type, e.g. <c>application/pdf</c>.</param>
+public sealed record EmailAttachment(string FileName, string ContentType, byte[] Content);
+
 /// <summary>Either an explicit set of users or "everyone in the tenant who holds a permission".</summary>
 public sealed record NotificationAudience
 {

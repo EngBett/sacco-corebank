@@ -96,6 +96,7 @@ builder.Services.AddPaymentsModule(builder.Configuration, connectionString);
 builder.Services.AddReportingModule(builder.Configuration, connectionString);
 builder.Services.AddNotificationsModule(builder.Configuration, connectionString).AddNotificationsRealtime(PortalCorsPolicy, builder.Configuration["Notifications:Redis"]);
 builder.Services.AddLendingScheduler(); // daily interest accrual + bureau retention purge (Lending:Maintenance)
+builder.Services.AddReportingScheduler(); // nightly branded PDF digest to configured recipients (Reporting:DailyDigest, ADR 0013)
 
 // Messaging & sagas: Wolverine (MIT), scoped to payment-provider orchestration (ADR 0003).
 builder.Host.UseWolverine(opts => PaymentsModule.ConfigureWolverine(opts, connectionString, builder.Environment));

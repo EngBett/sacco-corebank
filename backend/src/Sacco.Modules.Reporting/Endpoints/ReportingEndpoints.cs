@@ -15,6 +15,7 @@ namespace Sacco.Modules.Reporting.Endpoints;
 public sealed record GenerateReturnRequest(DateOnly PeriodStart, DateOnly PeriodEnd);
 public sealed record SubmitReturnRequest(string SubmissionReference);
 public sealed record ReasonRequest(string Reason);
+public sealed record AddRecipientRequest(string Email, string Name);
 public sealed record StatutoryReturnSummary(Guid Id, DateOnly PeriodStart, DateOnly PeriodEnd, ReturnStatus Status, Guid GeneratedByUserId, DateTimeOffset GeneratedAt, Guid? SubmittedByUserId, DateTimeOffset? SubmittedAt, string? SubmissionReference, bool IsReconciled, string ReconciliationNotes);
 public sealed record StatutoryReturnDetail(StatutoryReturnSummary Summary, StatutoryReturnPackage Package);
 
@@ -66,6 +67,26 @@ public sealed class ReportingEndpoints : IModuleEndpoints
             .RequirePermission(Permissions.Reporting.StatutorySubmit).WithName("SubmitStatutoryReturn");
         r.MapPost("/{id:guid}/withdraw", async (Guid id, ReasonRequest req, StatutoryReportService svc, ICurrentUser user, CancellationToken ct) => TypedResults.Ok(Summary(await svc.WithdrawAsync(id, req.Reason, user.UserId, ct))))
             .RequirePermission(Permissions.Reporting.StatutoryGenerate).WithName("WithdrawStatutoryReturn");
+
+        // ---- Nightly PDF digest (ADR 0013): who receives it, and an on-demand run/preview for demos ----
+        var d = app.MapGroup("/api/reporting/daily-digest").WithTags("Daily digest");
+        d.MapGet("/recipients", async (DailyDigestService svc, CancellationToken ct) => TypedResults.Ok(await svc.ListRecipientsAsync(ct)))
+            .RequirePermission(Permissions.Reporting.RecipientsManage).WithName("ListDigestRecipients");
+        d.MapPost("/recipients", async (AddRecipientRequest req, DailyDigestService svc, ICurrentUser user, CancellationToken ct) =>
+            TypedResults.Created("/api/reporting/daily-digest/recipients", await svc.AddRecipientAsync(req.Email, req.Name, user.UserId, ct)))
+            .RequirePermission(Permissions.Reporting.RecipientsManage).WithName("AddDigestRecipient");
+        d.MapDelete("/recipients/{id:guid}", async (Guid id, DailyDigestService svc, ICurrentUser user, CancellationToken ct) =>
+        {
+            await svc.RemoveRecipientAsync(id, user.UserId, ct);
+            return TypedResults.NoContent();
+        }).RequirePermission(Permissions.Reporting.RecipientsManage).WithName("RemoveDigestRecipient");
+        d.MapGet("/preview.pdf", async (DailyDigestService svc, CancellationToken ct) =>
+        {
+            var (pdf, fileName, _) = await svc.BuildAsync(ct);
+            return Results.File(pdf, "application/pdf", fileName);
+        }).RequirePermission(Permissions.Reporting.RecipientsManage).WithName("PreviewDailyDigest");
+        d.MapPost("/run", async (DailyDigestService svc, CancellationToken ct) => TypedResults.Ok(await svc.RunForCurrentTenantAsync(ct)))
+            .RequirePermission(Permissions.Reporting.RecipientsManage).WithName("RunDailyDigestNow");
     }
 
     private static StatutoryReturnSummary Summary(StatutoryReturn r) => new(r.Id, r.PeriodStart, r.PeriodEnd, r.Status, r.GeneratedByUserId, r.GeneratedAt, r.SubmittedByUserId, r.SubmittedAt, r.SubmissionReference, r.IsReconciled, r.ReconciliationNotes);

@@ -2004,6 +2004,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reporting/daily-digest/recipients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListDigestRecipients"];
+        put?: never;
+        post: operations["AddDigestRecipient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reporting/daily-digest/recipients/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["RemoveDigestRecipient"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reporting/daily-digest/preview.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PreviewDailyDigest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reporting/daily-digest/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RunDailyDigestNow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/notifications": {
         parameters: {
             query?: never;
@@ -2153,6 +2217,10 @@ export interface components {
             guarantorMemberId: string;
             /** Format: double */
             amount: number | string;
+        };
+        AddRecipientRequest: {
+            email: string;
+            name: string;
         };
         AgingBucketDraft: {
             name: string;
@@ -2472,6 +2540,12 @@ export interface components {
             amount: number | string;
             /** Format: double */
             newBalance: number | string;
+        };
+        DigestResult: {
+            sent: boolean;
+            /** Format: int32 */
+            recipientCount: number | string;
+            error: null | string;
         };
         DividendLineResponse: {
             /** Format: uuid */
@@ -3495,6 +3569,15 @@ export interface components {
             name: string;
             /** Format: double */
             amount: number | string;
+        };
+        ReportRecipientResponse: {
+            /** Format: uuid */
+            id: string;
+            email: string;
+            name: string;
+            isActive: boolean;
+            /** Format: date-time */
+            addedAt: string;
         };
         ReportSection: {
             title: string;
@@ -7239,6 +7322,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatutoryReturnSummary"];
+                };
+            };
+        };
+    };
+    ListDigestRecipients: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportRecipientResponse"][];
+                };
+            };
+        };
+    };
+    AddDigestRecipient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddRecipientRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportRecipientResponse"];
+                };
+            };
+        };
+    };
+    RemoveDigestRecipient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PreviewDailyDigest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RunDailyDigestNow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DigestResult"];
                 };
             };
         };

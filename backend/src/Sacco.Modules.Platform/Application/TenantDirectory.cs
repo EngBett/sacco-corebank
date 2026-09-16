@@ -21,6 +21,12 @@ public sealed class TenantDirectory(PlatformDbContext db, IMemoryCache cache) : 
     public async Task<IReadOnlyList<(Guid Id, string Slug)>> ListActiveAsync(CancellationToken ct)
         => (await db.Tenants.AsNoTracking().Where(t => t.IsActive).OrderBy(t => t.Slug).Select(t => new { t.Id, t.Slug }).ToListAsync(ct)).Select(t => (t.Id, t.Slug)).ToList();
 
+    public async Task<Sacco.Shared.Tenancy.TenantBrandingInfo?> GetBrandingAsync(Guid tenantId, CancellationToken ct)
+    {
+        var t = await FindByIdAsync(tenantId, ct);
+        return t is null ? null : new(t.Name, t.ShortName, t.Branding.PrimaryColor, t.Branding.SecondaryColor, t.Branding.LogoUrl, t.Branding.SupportEmail);
+    }
+
     private static readonly TimeSpan Ttl = TimeSpan.FromMinutes(5);
 
     public async Task<TenantInfo?> FindBySlugAsync(string slug, CancellationToken ct)

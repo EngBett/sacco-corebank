@@ -29,4 +29,20 @@ public sealed class ReportingSettings
     /// <summary>SDGF contribution rate on deposits; null until the current basis is confirmed with SASRA.</summary>
     public int? SdgfContributionBps { get; set; } = null;
     public string ThresholdSource { get; set; } = "Sacco Societies (DT-Sacco Business) Regulations — verify against current SASRA circular before submission";
+
+    public DailyDigestSettings DailyDigest { get; set; } = new();
+}
+
+/// <summary>Nightly branded PDF digest, emailed to each tenant's configured recipients (ADR 0013).</summary>
+public sealed class DailyDigestSettings
+{
+    /// <summary>Disabled in tools (seed) and tests; the API host enables it.</summary>
+    public bool Enabled { get; set; } = true;
+    public TimeOnly RunAtUtc { get; set; } = new(0, 0);
+    /// <summary>
+    /// Path to a system Chromium/Chrome binary (set in production Docker images — see backend/Dockerfile).
+    /// Null falls back to PuppeteerSharp's own downloaded revision, which is convenient for local dev but
+    /// should not be relied on in production (it downloads Chromium into the container at first run).
+    /// </summary>
+    public string? ChromiumExecutablePath { get; set; }
 }

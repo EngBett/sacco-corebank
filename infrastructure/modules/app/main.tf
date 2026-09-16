@@ -72,7 +72,9 @@ variable "api_cpu" {
 }
 variable "api_memory" {
   type    = number
-  default = 1024
+  # 1536, not 1024: the nightly PDF digest (ADR 0013) launches headless Chromium in-process for each tenant's
+  # report (sequentially, never in parallel), which needs headroom above the .NET runtime's own baseline.
+  default = 1536
 }
 variable "desired_count" {
   type    = number

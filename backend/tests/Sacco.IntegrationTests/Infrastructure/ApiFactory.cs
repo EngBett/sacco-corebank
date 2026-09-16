@@ -28,6 +28,7 @@ public sealed class ApiFactory(string connectionString, bool realAuth = false) :
         builder.UseSetting("Turnstile:Sandbox", "true");
         builder.UseSetting("PublicApi:ApiKey", PublicApiKey);
         builder.UseSetting("Lending:Maintenance:Enabled", "false"); // tests call RunOnceAsync explicitly
+        builder.UseSetting("Reporting:DailyDigest:Enabled", "false"); // tests call RunOnceAsync/RunForCurrentTenantAsync explicitly
 
         builder.ConfigureServices(services =>
         {

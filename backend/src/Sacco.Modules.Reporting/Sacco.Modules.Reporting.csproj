@@ -5,4 +5,9 @@
   <ItemGroup>
     <ProjectReference Include="../Sacco.Shared/Sacco.Shared.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- HTML-to-PDF for the nightly digest (ADR 0013): renders real HTML/CSS, so the same branded
+         template is trivially "professional" without a coordinate-based drawing API. -->
+    <PackageReference Include="PuppeteerSharp" />
+  </ItemGroup>
 </Project>

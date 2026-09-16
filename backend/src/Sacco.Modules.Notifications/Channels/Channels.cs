@@ -4,6 +4,7 @@ using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using Sacco.Modules.Notifications.Domain;
+using Sacco.Shared.Notifications;
 
 namespace Sacco.Modules.Notifications.Channels;
 
@@ -117,13 +118,6 @@ public interface ISmsSender
     Task<string?> SendAsync(string phoneNumber, string body, CancellationToken ct);
 }
 
-public interface IEmailSender
-{
-    string Name { get; }
-    bool IsSandbox { get; }
-    Task<string?> SendAsync(string to, string subject, string body, CancellationToken ct);
-}
-
 /// <summary>No gateway: the outbox row is the delivery. Returns a deterministic-looking reference so demos read like the real thing.</summary>
 public sealed class SandboxSmsSender : ISmsSender
 {
@@ -136,7 +130,8 @@ public sealed class SandboxEmailSender : IEmailSender
 {
     public string Name => "Sandbox email";
     public bool IsSandbox => true;
-    public Task<string?> SendAsync(string to, string subject, string body, CancellationToken ct) => Task.FromResult<string?>($"SBX-MAIL-{Guid.NewGuid():N}"[..21]);
+    public Task<string?> SendAsync(string to, string subject, string bodyHtml, IReadOnlyList<EmailAttachment>? attachments, CancellationToken ct)
+        => Task.FromResult<string?>($"SBX-MAIL-{Guid.NewGuid():N}"[..21] + (attachments is { Count: > 0 } a ? $"+{a.Count}att" : ""));
 }
 
 /// <summary>Africa's Talking bulk SMS (the gateway most Kenyan SACCOs already use). Written to the published REST API; verify against the AT sandbox before go-live.</summary>
@@ -174,7 +169,7 @@ public sealed class SmtpEmailSender(IOptions<NotificationChannelSettings> option
     public string Name => "SMTP";
     public bool IsSandbox => false;
 
-    public async Task<string?> SendAsync(string to, string subject, string body, CancellationToken ct)
+    public async Task<string?> SendAsync(string to, string subject, string bodyHtml, IReadOnlyList<EmailAttachment>? attachments, CancellationToken ct)
     {
         var s = options.Value.Email.Smtp;
         if (string.IsNullOrEmpty(s.Host)) throw new InvalidOperationException("Notifications:Email:Smtp:Host is not configured.");
@@ -182,7 +177,11 @@ public sealed class SmtpEmailSender(IOptions<NotificationChannelSettings> option
         message.From.Add(new MailboxAddress(s.FromName, s.From));
         message.To.Add(MailboxAddress.Parse(to));
         message.Subject = subject;
-        message.Body = new TextPart("plain") { Text = body };
+        var builder = new BodyBuilder { HtmlBody = bodyHtml };
+        if (attachments is not null)
+            foreach (var a in attachments)
+                builder.Attachments.Add(a.FileName, a.Content, MimeKit.ContentType.Parse(a.ContentType));
+        message.Body = builder.ToMessageBody();
         using var client = new SmtpClient();
         await client.ConnectAsync(s.Host, s.Port, s.UseStartTls ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto, ct);
         if (!string.IsNullOrEmpty(s.Username)) await client.AuthenticateAsync(s.Username, s.Password, ct);

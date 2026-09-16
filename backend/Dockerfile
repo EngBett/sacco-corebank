@@ -14,10 +14,14 @@ RUN dotnet publish backend/src/Sacco.Api/Sacco.Api.csproj -c Release -o /out/api
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS api
 WORKDIR /app
+# System Chromium for the nightly PDF digest (ADR 0013, Sacco.Modules.Reporting): PuppeteerSharp is pointed at
+# it via Reporting__DailyDigest__ChromiumExecutablePath so the container never downloads a browser at runtime.
+RUN apt-get update && apt-get install -y --no-install-recommends chromium fonts-liberation fonts-noto-color-emoji \
+    && rm -rf /var/lib/apt/lists/*
 RUN groupadd -r sacco && useradd -r -g sacco sacco
 COPY --from=build /out/api .
 USER sacco
-ENV ASPNETCORE_URLS=http://+:8080 DOTNET_EnableDiagnostics=0
+ENV ASPNETCORE_URLS=http://+:8080 DOTNET_EnableDiagnostics=0 Reporting__DailyDigest__ChromiumExecutablePath=/usr/bin/chromium
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s CMD ["/bin/sh", "-c", "wget -qO- http://localhost:8080/health || exit 1"]
 ENTRYPOINT ["dotnet", "Sacco.Api.dll"]

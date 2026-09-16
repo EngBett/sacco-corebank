@@ -92,6 +92,13 @@ is refused with `loans.exit.active_guarantees`.
 
 Sandbox senders record every delivery on `notifications.outbound_messages`; `admin` sees them at `/admin/outbox`.
 
+## Daily PDF digest (ADR 0013)
+
+`admin@demosacco.example.co.ke` is seeded as the one recipient of the nightly branded PDF (capital adequacy, liquidity,
+portfolio quality) at Admin → Daily PDF digest (`admin`, `compliance`). The scheduler itself is disabled in the seed
+tool and tests (`Reporting:DailyDigest:Enabled=false` for tests; the seed tool never runs schedulers at all); use the
+page's "Preview PDF" or "Send now" to see it without waiting for midnight.
+
 ## Credit scoring
 
 The demo scorecard is the platform default (100 points across eight factors; approve ≥ 70, refer ≥ 50, decline when
