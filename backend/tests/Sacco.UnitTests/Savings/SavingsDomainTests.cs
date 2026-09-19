@@ -44,13 +44,13 @@ public class SavingsDomainTests
     {
         var fosa = Fosa();
         var account = SavingsAccount.Open(Guid.NewGuid(), Tenant, "M00001-FO", Guid.NewGuid(), fosa, Teller, Now);
-        WithdrawalRequest.Create(Guid.NewGuid(), Tenant, account, fosa, 20_000m, PayoutChannel.Cash, null, null, Teller, Now, Today).QualifiesForTellerPayout(fosa).ShouldBeTrue();
-        WithdrawalRequest.Create(Guid.NewGuid(), Tenant, account, fosa, 60_000m, PayoutChannel.Cash, null, null, Teller, Now, Today).QualifiesForTellerPayout(fosa).ShouldBeFalse();
-        WithdrawalRequest.Create(Guid.NewGuid(), Tenant, account, fosa, 1_000m, PayoutChannel.MPesa, "254700100001", null, Teller, Now, Today).QualifiesForTellerPayout(fosa).ShouldBeFalse();
+        WithdrawalRequest.Create(Guid.NewGuid(), Tenant, account, fosa, 20_000m, FeeCharge.ProductDefault(fosa), PayoutChannel.Cash, null, null, Teller, Now, Today).QualifiesForTellerPayout(fosa).ShouldBeTrue();
+        WithdrawalRequest.Create(Guid.NewGuid(), Tenant, account, fosa, 60_000m, FeeCharge.ProductDefault(fosa), PayoutChannel.Cash, null, null, Teller, Now, Today).QualifiesForTellerPayout(fosa).ShouldBeFalse();
+        WithdrawalRequest.Create(Guid.NewGuid(), Tenant, account, fosa, 1_000m, FeeCharge.ProductDefault(fosa), PayoutChannel.MPesa, "254700100001", null, Teller, Now, Today).QualifiesForTellerPayout(fosa).ShouldBeFalse();
 
         var bosa = Bosa();
         var deposits = SavingsAccount.Open(Guid.NewGuid(), Tenant, "M00001-SV", Guid.NewGuid(), bosa, Teller, Now);
-        var notice = WithdrawalRequest.Create(Guid.NewGuid(), Tenant, deposits, bosa, 1_000m, PayoutChannel.Cash, null, null, Teller, Now, Today);
+        var notice = WithdrawalRequest.Create(Guid.NewGuid(), Tenant, deposits, bosa, 1_000m, FeeCharge.ProductDefault(bosa), PayoutChannel.Cash, null, null, Teller, Now, Today);
         notice.QualifiesForTellerPayout(bosa).ShouldBeFalse();
         notice.NoticeExpiresOn.ShouldBe(Today.AddDays(60));
     }
@@ -60,7 +60,7 @@ public class SavingsDomainTests
     {
         var bosa = Bosa();
         var deposits = SavingsAccount.Open(Guid.NewGuid(), Tenant, "M00001-SV", Guid.NewGuid(), bosa, Teller, Now);
-        var w = WithdrawalRequest.Create(Guid.NewGuid(), Tenant, deposits, bosa, 1_000m, PayoutChannel.Cash, null, null, Teller, Now, Today);
+        var w = WithdrawalRequest.Create(Guid.NewGuid(), Tenant, deposits, bosa, 1_000m, FeeCharge.ProductDefault(bosa), PayoutChannel.Cash, null, null, Teller, Now, Today);
         Should.Throw<MakerCheckerViolationException>(() => w.Approve(Teller, Now));
         w.Approve(Manager, Now);
         Should.Throw<DomainRuleException>(() => w.MarkPaid(Teller, "REF", Now, Today.AddDays(59))).Code.ShouldBe("savings.withdrawal.notice_not_expired");
@@ -73,10 +73,10 @@ public class SavingsDomainTests
     {
         var fosa = Fosa();
         var account = SavingsAccount.Open(Guid.NewGuid(), Tenant, "M00001-FO", Guid.NewGuid(), fosa, Teller, Now);
-        Should.Throw<DomainRuleException>(() => WithdrawalRequest.Create(Guid.NewGuid(), Tenant, account, fosa, 100m, PayoutChannel.MPesa, null, null, Teller, Now, Today)).Code.ShouldBe("savings.withdrawal.destination_required");
+        Should.Throw<DomainRuleException>(() => WithdrawalRequest.Create(Guid.NewGuid(), Tenant, account, fosa, 100m, FeeCharge.ProductDefault(fosa), PayoutChannel.MPesa, null, null, Teller, Now, Today)).Code.ShouldBe("savings.withdrawal.destination_required");
         var shares = SavingsProduct.Create(Guid.NewGuid(), Tenant, "SHARES", "Shares", null, ProductKind.Shares, Segment.Bosa, "3000", "SH", 10_000, 10_000, false, 0, 0, 0, null, 0, null, null);
         var sh = SavingsAccount.Open(Guid.NewGuid(), Tenant, "M00001-SH", Guid.NewGuid(), shares, Teller, Now);
-        Should.Throw<DomainRuleException>(() => WithdrawalRequest.Create(Guid.NewGuid(), Tenant, sh, shares, 100m, PayoutChannel.Cash, null, null, Teller, Now, Today)).Code.ShouldBe("savings.withdrawal.not_allowed");
+        Should.Throw<DomainRuleException>(() => WithdrawalRequest.Create(Guid.NewGuid(), Tenant, sh, shares, 100m, FeeCharge.ProductDefault(shares), PayoutChannel.Cash, null, null, Teller, Now, Today)).Code.ShouldBe("savings.withdrawal.not_allowed");
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class SavingsDomainTests
             lines.Where(l => l.Segment == seg && l.Direction == EntryDirection.Debit).Sum(l => l.Amount)
                 .ShouldBe(lines.Where(l => l.Segment == seg && l.Direction == EntryDirection.Credit).Sum(l => l.Amount));
 
-        var sameSegment = PostingBuilder.Outflow(s, s.TellerCashGl, Segment.Fosa, "2200", "M00001-FO", Segment.Fosa, 1_000m, 50m, "4200", "withdrawal");
+        var sameSegment = PostingBuilder.Outflow(s, s.TellerCashGl, Segment.Fosa, "2200", "M00001-FO", Segment.Fosa, 1_000m, 50m, "4200", Segment.Fosa, "withdrawal");
         sameSegment.Count.ShouldBe(3);
         sameSegment.Sum(l => l.Direction == EntryDirection.Debit ? l.Amount : -l.Amount).ShouldBe(0m);
     }

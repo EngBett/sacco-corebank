@@ -10,6 +10,23 @@ public interface ICurrentUser
     string? TenantSlug { get; }
     /// <summary>Set when the principal is a member self-service login (claim <c>member_id</c>); null for staff.</summary>
     Guid? MemberId { get; }
+
+    /// <summary>The staff member's branch (claim <c>branch_id</c>), stamped on what they do. Null for members and for unassigned staff.</summary>
+    Guid? BranchId { get; }
+}
+
+/// <summary>
+/// Stands in for the signed-in user when there is no request: the seed tool, schedulers and saga handlers. Nothing is
+/// authenticated, so services that stamp "who did this" fall back to their own defaults (head-office branch, system actor).
+/// </summary>
+public sealed class NullCurrentUser : ICurrentUser
+{
+    public bool IsAuthenticated => false;
+    public Guid UserId => Guid.Empty;
+    public string UserName => "system";
+    public string? TenantSlug => null;
+    public Guid? MemberId => null;
+    public Guid? BranchId => null;
 }
 
 public static class CurrentUserExtensions

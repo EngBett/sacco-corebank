@@ -47,6 +47,7 @@ public class MembersDbContext(DbContextOptions<MembersDbContext> options, ITenan
             b.HasKey(m => m.Id);
             b.Property(m => m.MemberNumber).HasMaxLength(20).IsRequired();
             b.HasIndex(m => new { m.TenantId, m.MemberNumber }).IsUnique();
+            b.HasIndex(m => new { m.TenantId, m.BranchId });
             b.OwnsOne(m => m.Details, d =>
             {
                 MapDetails(d);

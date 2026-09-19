@@ -1,0 +1,15 @@
+appsettings.Local.json
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.log
+*.db
+*.bak
+*.cache
+*.zip
+*.tar.gz
+*.tar
+*.7z
+*.idea

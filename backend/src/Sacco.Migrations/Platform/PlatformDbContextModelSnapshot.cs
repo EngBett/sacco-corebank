@@ -36,9 +36,18 @@ namespace Sacco.Migrations.Platform
                         .HasColumnType("character varying(100)")
                         .HasColumnName("action");
 
+                    b.Property<string>("ActorName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("actor_name");
+
                     b.Property<Guid>("ActorUserId")
                         .HasColumnType("uuid")
                         .HasColumnName("actor_user_id");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
 
                     b.Property<string>("CorrelationId")
                         .HasMaxLength(100)
@@ -46,7 +55,7 @@ namespace Sacco.Migrations.Platform
                         .HasColumnName("correlation_id");
 
                     b.Property<string>("Details")
-                        .HasColumnType("jsonb")
+                        .HasColumnType("text")
                         .HasColumnName("details");
 
                     b.Property<string>("EntityId")
@@ -61,19 +70,55 @@ namespace Sacco.Migrations.Platform
                         .HasColumnType("character varying(100)")
                         .HasColumnName("entity_type");
 
+                    b.Property<string>("Hash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("hash");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)")
+                        .HasColumnName("ip_address");
+
                     b.Property<DateTimeOffset>("OccurredAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("occurred_at");
 
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("outcome");
+
+                    b.Property<string>("PreviousHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("previous_hash");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("user_agent");
 
                     b.HasKey("Id")
                         .HasName("pk_audit_log");
 
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_audit_log_tenant_id");
+
+                    b.HasIndex("TenantId", "Action")
+                        .HasDatabaseName("ix_audit_log_tenant_id_action");
+
+                    b.HasIndex("TenantId", "ActorUserId")
+                        .HasDatabaseName("ix_audit_log_tenant_id_actor_user_id");
+
+                    b.HasIndex("TenantId", "BranchId")
+                        .HasDatabaseName("ix_audit_log_tenant_id_branch_id");
 
                     b.HasIndex("TenantId", "OccurredAt")
                         .HasDatabaseName("ix_audit_log_tenant_id_occurred_at");
@@ -82,6 +127,131 @@ namespace Sacco.Migrations.Platform
                         .HasDatabaseName("ix_audit_log_tenant_id_entity_type_entity_id");
 
                     b.ToTable("audit_log", "platform");
+                });
+
+            modelBuilder.Entity("Sacco.Modules.Platform.Domain.Branch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("County")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("county");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("email");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsHeadOffice")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_head_office");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTimeOffset>("OpenedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("opened_at");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("phone_number");
+
+                    b.Property<string>("PhysicalAddress")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("physical_address");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Town")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("town");
+
+                    b.HasKey("Id")
+                        .HasName("pk_branches");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_branches_tenant_id");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_branches_tenant_id_code");
+
+                    b.ToTable("branches", "platform");
+                });
+
+            modelBuilder.Entity("Sacco.Modules.Platform.Domain.PublicService", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("description");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("icon");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_public_services");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_public_services_tenant_id");
+
+                    b.HasIndex("TenantId", "DisplayOrder")
+                        .HasDatabaseName("ix_public_services_tenant_id_display_order");
+
+                    b.ToTable("public_services", "platform");
                 });
 
             modelBuilder.Entity("Sacco.Modules.Platform.Domain.Tenant", b =>
@@ -154,6 +324,21 @@ namespace Sacco.Migrations.Platform
                                 .HasMaxLength(9)
                                 .HasColumnType("character varying(9)")
                                 .HasColumnName("branding_accent_color");
+
+                            b1.Property<string>("DarkModeLogoUrl")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("branding_dark_mode_logo_url");
+
+                            b1.Property<string>("FaviconUrl")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("branding_favicon_url");
+
+                            b1.Property<string>("LightModeLogoUrl")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("branding_light_mode_logo_url");
 
                             b1.Property<string>("LogoUrl")
                                 .HasMaxLength(500)

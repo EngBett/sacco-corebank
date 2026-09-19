@@ -11,7 +11,6 @@
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageVersion Include="Npgsql" Version="10.0.3" />
     <PackageVersion Include="EFCore.NamingConventions" Version="10.0.1" />
-
     <!-- ASP.NET Core / hosting (MIT) -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.12" />
@@ -20,32 +19,27 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.12" />
+    <PackageVersion Include="QRCoder" Version="1.8.0" />
     <PackageVersion Include="Scalar.AspNetCore" Version="2.17.3" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.12" />
-
     <!-- Messaging (MIT) — Wolverine, never MassTransit (ADR 0003) -->
     <PackageVersion Include="WolverineFx" Version="6.36.0" />
     <PackageVersion Include="WolverineFx.Postgresql" Version="6.36.0" />
     <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="6.36.0" />
     <PackageVersion Include="WolverineFx.RuntimeCompilation" Version="6.36.0" />
-
     <!-- Auth (Apache-2.0) — Open.IdentityServer, never Duende (ADR 0005) -->
     <PackageVersion Include="Open.IdentityServer" Version="2.0.0" />
-
     <!-- Notification channels (MIT) -->
     <PackageVersion Include="MailKit" Version="4.13.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.12" />
-
     <!-- PDF generation (MIT wrapper; drives Chromium — BSD) — real HTML/CSS rendering for the nightly
          digest (ADR 0013). Chosen over DinkToPdf/wkhtmltopdf (LGPL native binary, engine frozen since
          ~2020) for rendering fidelity and maintenance, and over QuestPDF (revenue-gated commercial
          license above the free tier — the MassTransit risk ADR 0003 already flagged, not repeated here)
          because the brief was specifically an HTML-to-PDF tool. -->
     <PackageVersion Include="PuppeteerSharp" Version="25.11.0" />
-
     <!-- Seed / fake data (MIT) -->
     <PackageVersion Include="Bogus" Version="35.6.5" />
-
     <!-- Tests (Apache-2.0 / MIT / BSD-3) — Shouldly, never FluentAssertions v8+ (commercial) -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.0" />

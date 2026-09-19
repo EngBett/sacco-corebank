@@ -5,7 +5,7 @@ namespace MockedNcba.API.Services;
 
 /// <summary>
 /// In-memory store for mock NCBA transactions.
-/// Keyed by request Reference (for duplicate detection on the same Pochipay transaction reference).
+/// Keyed by request Reference (for duplicate detection on the same transaction reference).
 /// </summary>
 public interface ITransactionStore
 {

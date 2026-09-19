@@ -27,6 +27,8 @@ public sealed class AuthenticationTests(PostgresFixture pg) : IDisposable
             jwt.Subject.ShouldBe(id.ToString());
             jwt.Claims.Single(c => c.Type == "tenant").Value.ShouldBe(DemoTenant.Slug);
             jwt.Claims.ShouldNotContain(c => c.Type == "permission", "permissions are resolved server-side, never baked into the token");
+            // The office a staff member works at travels in the token, so their postings and audit rows are stamped with it (ADR 0018).
+            jwt.Claims.SingleOrDefault(c => c.Type == "branch_id").ShouldNotBeNull($"{userName} works at a branch").Value.ShouldNotBeNullOrWhiteSpace();
 
             var me = await (await _factory.ClientWithToken(token).GetAsync("/api/me")).ReadAs<MeResponse>();
             me.Roles.ShouldBe([roleName]);
@@ -99,6 +101,12 @@ public sealed class AuthenticationTests(PostgresFixture pg) : IDisposable
         disco.ShouldContain("/connect/authorize");
         var login = await client.GetAsync("/account/login?tenant=demo");
         login.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await login.Content.ReadAsStringAsync()).ShouldContain("Demo SACCO");
+        var html = await login.Content.ReadAsStringAsync();
+        html.ShouldContain("Icodeio SACCO");
+        html.ShouldContain($"src=\"{DemoTenant.LogoUrl}\"");
+        html.ShouldContain($"<link rel=\"icon\" href=\"{DemoTenant.FaviconUrl}\">");
+        // The SACCO is never typed in: it comes from configuration/the request and is posted back as a hidden field.
+        html.ShouldContain("<input type=\"hidden\" name=\"tenant\" value=\"demo\">");
+        html.ShouldNotContain("<label for=\"tenant\">");
     }
 }

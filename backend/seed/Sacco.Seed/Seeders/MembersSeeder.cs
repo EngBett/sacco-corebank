@@ -26,7 +26,10 @@ public sealed class MembersSeeder(MembersDbContext db, MemberService members, Sa
             if (existing.Contains(p.MemberNumber)) continue;
             // Established members joined 12–13 months ago (matching the ledger history); pending/rejected ones are recent registrations.
             var joinedAt = p.HasAccounts ? clock.Today.AddMonths(-13).AddDays(index * 2) : clock.Today.AddDays(-10 - index);
-            var member = await members.RegisterAsync(DemoTenant.MemberId(p.MemberNumber), p.MemberNumber, Details(p), Kin(p), MemberSource.StaffRegistered, null, DemoTenant.Users.LoanOfficer, ct, joinedAt);
+            // Spread members across the offices so branch reporting and filters have something to show.
+            var branchCode = DemoTenant.Branches[index % DemoTenant.Branches.Length].Code;
+            var member = await members.RegisterAsync(DemoTenant.MemberId(p.MemberNumber), p.MemberNumber, Details(p), Kin(p), MemberSource.StaffRegistered, null, DemoTenant.Users.LoanOfficer, ct, joinedAt,
+                branchId: DemoTenant.BranchId(branchCode));
             await members.AddDocumentAsync(member.Id, KycDocumentType.NationalIdFront, $"kyc/{p.MemberNumber}/id-front.jpg", DemoTenant.Users.LoanOfficer, ct);
             await members.AddDocumentAsync(member.Id, KycDocumentType.NationalIdBack, $"kyc/{p.MemberNumber}/id-back.jpg", DemoTenant.Users.LoanOfficer, ct);
             await members.AddDocumentAsync(member.Id, KycDocumentType.PassportPhoto, $"kyc/{p.MemberNumber}/photo.jpg", DemoTenant.Users.LoanOfficer, ct);
@@ -49,6 +52,16 @@ public sealed class MembersSeeder(MembersDbContext db, MemberService members, Sa
             created++;
         }
         logger.Created("Members", created);
+
+        // Databases seeded before branches existed: spread the members that have no office over the same rotation.
+        var unassigned = await db.Members.Where(m => m.BranchId == null).OrderBy(m => m.MemberNumber).ToListAsync(ct);
+        for (var i = 0; i < unassigned.Count; i++)
+            unassigned[i].SetBranch(DemoTenant.BranchId(DemoTenant.Branches[(i + 1) % DemoTenant.Branches.Length].Code));
+        if (unassigned.Count > 0)
+        {
+            await db.SaveChangesAsync(ct);
+            logger.Created("Members placed at an office", unassigned.Count);
+        }
 
         // Make sure the member-number sequence continues after the seeded numbers.
         var max = KenyanNames.Members.Max(m => int.Parse(m.MemberNumber[1..]));

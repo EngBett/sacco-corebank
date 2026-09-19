@@ -18,6 +18,7 @@ public sealed class TestAuthHandler(IOptionsMonitor<AuthenticationSchemeOptions>
     public const string SchemeName = "Test";
     public const string UserHeader = "X-Test-User";
     public const string PermissionsHeader = "X-Test-Permissions";
+    public const string BranchHeader = "X-Test-Branch";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
@@ -25,6 +26,8 @@ public sealed class TestAuthHandler(IOptionsMonitor<AuthenticationSchemeOptions>
             return Task.FromResult(AuthenticateResult.NoResult());
 
         var claims = new List<Claim> { new("sub", userId!), new("name", $"test-{userId}") };
+        if (Request.Headers.TryGetValue(BranchHeader, out var branch) && !string.IsNullOrWhiteSpace(branch))
+            claims.Add(new Claim("branch_id", branch!));
         if (Request.Headers.TryGetValue(PermissionsHeader, out var perms))
             claims.AddRange(perms.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(p => new Claim("permission", p)));
 

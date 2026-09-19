@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
 using Sacco.Modules.Reporting.Domain;
 using Sacco.Modules.Reporting.Persistence;
@@ -20,7 +21,9 @@ public sealed record DigestResult(bool Sent, int RecipientCount, string? Error);
 /// emailed via the Shared <see cref="IEmailSender"/> contract so this module never depends on Notifications directly.
 /// </summary>
 public sealed class DailyDigestService(ReportingDbContext db, StatutoryReportService reports, ILendingService lending, HtmlToPdfRenderer renderer,
-    IEmailSender email, ITenantEnumerator tenants, ITenantContext tenant, IClock clock, IAuditLogger audit, ILogger<DailyDigestService> logger)
+    IEmailSender email, ITenantEnumerator tenants, ITenantContext tenant, IClock clock, IAuditLogger audit,
+    // Optional: the seed tool builds this service without a web host. No web root just means the PDF uses the initials mark.
+    IEnumerable<IWebHostEnvironment> webHost, ILogger<DailyDigestService> logger)
 {
     public async Task<IReadOnlyList<ReportRecipientResponse>> ListRecipientsAsync(CancellationToken ct)
         => (await db.Recipients.AsNoTracking().OrderBy(r => r.Email).ToListAsync(ct)).Select(ToResponse).ToList();
@@ -50,6 +53,8 @@ public sealed class DailyDigestService(ReportingDbContext db, StatutoryReportSer
     {
         var today = clock.Today;
         var branding = await tenants.GetBrandingAsync(tenant.TenantId, ct) ?? new TenantBrandingInfo(tenant.TenantSlug, tenant.TenantSlug, "#0f766e", "#f59e0b", null, "");
+        var webRoot = webHost.FirstOrDefault()?.WebRootPath;
+        branding = branding with { LogoUrl = DigestLogo.Resolve(branding.LogoUrl, webRoot) };
         var position = await reports.FinancialPositionAsync(null, today, ct);
         var capital = await reports.CapitalAdequacyAsync(today, ct);
         var liquidity = await reports.LiquidityAsync(today, ct);

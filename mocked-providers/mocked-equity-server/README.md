@@ -97,8 +97,8 @@ you whether your envelope is well-formed and whether the PIN matches.
 `Pin`, `OrganizationUsername`, `OrganizationPassword`, `TokenLifetimeMinutes`,
 `CallbackDelaySecondsMin/Max`, `ValidateEncryptedCredentials`.
 
-The matching payments-side config lives under `ProviderCredentials:Equity` (see
-`payments/src/Pochipay.Payments.API/appsettings.Local.json`) and already points here.
+The matching config on the platform side is `Payments:Banks:EQUITY:*` (see `../README.md` and
+`docs/integrations/payment-providers.md` in the repo root).
 
 ## Pointing payments at it
 

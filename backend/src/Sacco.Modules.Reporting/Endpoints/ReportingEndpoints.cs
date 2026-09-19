@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Sacco.Modules.Reporting.Application;
 using Sacco.Modules.Reporting.Domain;
 using Sacco.Modules.Reporting.Persistence;
+using Sacco.Shared.Audit;
 using Sacco.Shared.Auth;
 using Sacco.Shared.Domain;
 using Sacco.Shared.Http;
@@ -52,10 +53,12 @@ public sealed class ReportingEndpoints : IModuleEndpoints
             var ret = await svc.GetAsync(id, ct);
             return TypedResults.Ok(new StatutoryReturnDetail(Summary(ret), StatutoryReportService.Deserialize(ret.Package)));
         }).RequirePermission(Permissions.Reporting.View).WithName("GetStatutoryReturn");
-        r.MapGet("/{id:guid}/export.csv", async (Guid id, StatutoryReportService svc, CancellationToken ct) =>
+        r.MapGet("/{id:guid}/export.csv", async (Guid id, StatutoryReportService svc, IAuditLogger audit, ICurrentUser user, CancellationToken ct) =>
         {
             var ret = await svc.GetAsync(id, ct);
             var csv = StatutoryReturnCsv.Render(StatutoryReportService.Deserialize(ret.Package));
+            await audit.RecordAsync(new AuditEvent("reporting.return.exported", "StatutoryReturn", id.ToString(), user.UserId,
+                AuditDetails.New().With("periodEnd", ret.PeriodEnd.ToString("yyyy-MM-dd")).With("format", "csv").ToJson()), ct);
             return Results.File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", $"sasra-return-{ret.PeriodEnd:yyyy-MM-dd}.csv");
         }).RequirePermission(Permissions.Reporting.View).WithName("ExportStatutoryReturnCsv");
         r.MapPost("", async (GenerateReturnRequest req, StatutoryReportService svc, ICurrentUser user, CancellationToken ct) =>
@@ -80,12 +83,20 @@ public sealed class ReportingEndpoints : IModuleEndpoints
             await svc.RemoveRecipientAsync(id, user.UserId, ct);
             return TypedResults.NoContent();
         }).RequirePermission(Permissions.Reporting.RecipientsManage).WithName("RemoveDigestRecipient");
-        d.MapGet("/preview.pdf", async (DailyDigestService svc, CancellationToken ct) =>
+        d.MapGet("/preview.pdf", async (DailyDigestService svc, IAuditLogger audit, ICurrentUser user, CancellationToken ct) =>
         {
             var (pdf, fileName, _) = await svc.BuildAsync(ct);
+            await audit.RecordAsync(new AuditEvent("reporting.digest.downloaded", "DailyDigest", fileName, user.UserId,
+                AuditDetails.New().With("bytes", pdf.Length).ToJson()), ct);
             return Results.File(pdf, "application/pdf", fileName);
         }).RequirePermission(Permissions.Reporting.RecipientsManage).WithName("PreviewDailyDigest");
-        d.MapPost("/run", async (DailyDigestService svc, CancellationToken ct) => TypedResults.Ok(await svc.RunForCurrentTenantAsync(ct)))
+        d.MapPost("/run", async (DailyDigestService svc, IAuditLogger audit, ICurrentUser user, CancellationToken ct) =>
+        {
+            var result = await svc.RunForCurrentTenantAsync(ct);
+            await audit.RecordAsync(new AuditEvent("reporting.digest.sent", "DailyDigest", DateTime.UtcNow.ToString("yyyy-MM-dd"), user.UserId,
+                AuditDetails.New().With("recipients", result.RecipientCount).With("sent", result.Sent).ToJson(), Outcome: result.Sent ? AuditOutcome.Success : AuditOutcome.Failure), ct);
+            return TypedResults.Ok(result);
+        })
             .RequirePermission(Permissions.Reporting.RecipientsManage).WithName("RunDailyDigestNow");
     }
 

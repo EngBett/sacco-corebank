@@ -27,8 +27,8 @@ public sealed class ReportingSeeder(ReportingDbContext db, StatutoryReportServic
 
         if (!await db.Recipients.AnyAsync(ct))
         {
-            await digest.AddRecipientAsync("admin@demosacco.example.co.ke", "Grace Wanjiku (System Admin)", DemoTenant.Users.Admin, ct);
-            logger.Created("Daily digest recipient admin@demosacco.example.co.ke", 1);
+            await digest.AddRecipientAsync("admin@icodeio.example.co.ke", "Grace Wanjiku (System Admin)", DemoTenant.Users.Admin, ct);
+            logger.Created("Daily digest recipient admin@icodeio.example.co.ke", 1);
         }
     }
 }

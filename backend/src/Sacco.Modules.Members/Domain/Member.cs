@@ -73,6 +73,11 @@ public class Member : TenantEntity
     public DateOnly JoinedAt { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public Guid RegisteredByUserId { get; private set; }
+
+    /// <summary>The office that serves this member (ADR 0018): where they registered, and where their file is held.</summary>
+    public Guid? BranchId { get; private set; }
+
+    public void SetBranch(Guid? branchId) => BranchId = branchId;
     public Guid? KycVerifiedByUserId { get; private set; }
     public DateTimeOffset? KycVerifiedAt { get; private set; }
     public string? KycRejectionReason { get; private set; }
@@ -87,7 +92,7 @@ public class Member : TenantEntity
     public string? ExitSettlementJson { get; private set; }
     public IReadOnlyList<KycDocument> Documents => _documents;
 
-    public static Member Register(Guid id, Guid tenantId, string memberNumber, PersonalDetails details, NextOfKin nextOfKin, MemberSource source, Guid? applicationId, Guid registeredBy, DateOnly today, DateTimeOffset now, DateOnly? joinedAt = null)
+    public static Member Register(Guid id, Guid tenantId, string memberNumber, PersonalDetails details, NextOfKin nextOfKin, MemberSource source, Guid? applicationId, Guid registeredBy, DateOnly today, DateTimeOffset now, DateOnly? joinedAt = null, Guid? branchId = null)
     {
         details.Validate(today);
         if (joinedAt is DateOnly j && j > today) throw new DomainRuleException("members.joined_in_future", "Join date cannot be in the future.");
@@ -96,7 +101,7 @@ public class Member : TenantEntity
         {
             Id = id, TenantId = tenantId, MemberNumber = memberNumber, Details = details, NextOfKin = nextOfKin,
             KycStatus = KycStatus.PendingVerification, Source = source, ApplicationId = applicationId,
-            JoinedAt = joinedAt ?? today, CreatedAt = now, RegisteredByUserId = registeredBy,
+            JoinedAt = joinedAt ?? today, CreatedAt = now, RegisteredByUserId = registeredBy, BranchId = branchId,
         };
     }
 

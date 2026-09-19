@@ -31,7 +31,7 @@ public sealed record DepositCommand(
     string? Narrative,
     Guid ByUserId);
 
-public sealed record DepositResult(Guid JournalEntryId, string JournalReference, string AccountNumber, decimal Amount, decimal NewBalance);
+public sealed record DepositResult(Guid JournalEntryId, string JournalReference, string AccountNumber, decimal Amount, decimal NewBalance, decimal Fee);
 
 public sealed record MemberSavingsSummary(
     Guid MemberId,
@@ -47,6 +47,16 @@ public sealed record MemberSavingsSummary(
     string? SharesAccountNumber);
 
 public sealed record WithdrawalPayoutInfo(Guid Id, string AccountNumber, Guid MemberId, decimal Amount, decimal Fee, string Channel, string? Destination, bool IsApproved, bool IsPaid);
+
+/// <summary>
+/// Whether a member may see an account's balance right now through self-service. A product can carry a
+/// balance-enquiry fee (ADR 0015); until the member pays for a reveal window, balances — including the
+/// running balances on a statement — stay hidden. Implemented by Savings; consumed by Ledger's self statement.
+/// </summary>
+public interface IBalanceVisibility
+{
+    Task<bool> IsBalanceVisibleAsync(Guid memberId, string accountNumber, CancellationToken ct);
+}
 
 /// <summary>Savings module's public surface for Lending and Payments.</summary>
 public enum ExitPayoutChannel { Cash = 1, BankTransfer = 2 }

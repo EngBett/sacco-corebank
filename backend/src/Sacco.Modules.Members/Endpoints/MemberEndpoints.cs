@@ -28,17 +28,19 @@ public sealed record NextOfKinDto(string Name, string Relationship, string Phone
     public NextOfKin ToDomain() => new() { Name = Name, Relationship = Relationship, PhoneNumber = PhoneNumber };
     public static NextOfKinDto From(NextOfKin k) => new(k.Name, k.Relationship, k.PhoneNumber);
 }
-public sealed record SaveMemberRequest(PersonalDetailsDto Details, NextOfKinDto NextOfKin);
+/// <param name="BranchId">Office that will serve the member; defaults to the registering officer's branch (ADR 0018).</param>
+public sealed record SetMemberBranchRequest(Guid? BranchId);
+public sealed record SaveMemberRequest(PersonalDetailsDto Details, NextOfKinDto NextOfKin, Guid? BranchId = null);
 public sealed record KycDocumentDto(Guid Id, KycDocumentType Type, string FileReference, Guid UploadedByUserId, DateTimeOffset UploadedAt);
 public sealed record AddDocumentRequest(KycDocumentType Type, string FileReference);
 public sealed record ReasonRequest(string Reason);
 public sealed record MemberResponse(Guid Id, string MemberNumber, string FullName, PersonalDetailsDto Details, NextOfKinDto NextOfKin, KycStatus KycStatus, MemberSource Source, DateOnly JoinedAt,
     Guid RegisteredByUserId, Guid? KycVerifiedByUserId, DateTimeOffset? KycVerifiedAt, string? KycRejectionReason, string? SuspensionReason, IReadOnlyList<KycDocumentDto> Documents,
-    Guid? ExitRequestedByUserId, DateTimeOffset? ExitRequestedAt, string? ExitReason, Guid? ExitApprovedByUserId, DateTimeOffset? ExitedAt, string? ExitSettlementJson, bool SelfServiceEnabled);
+    Guid? ExitRequestedByUserId, DateTimeOffset? ExitRequestedAt, string? ExitReason, Guid? ExitApprovedByUserId, DateTimeOffset? ExitedAt, string? ExitSettlementJson, bool SelfServiceEnabled, Guid? BranchId);
 public sealed record ApproveExitRequest(ExitPayoutChannel Channel);
 public sealed record EnableSelfServiceRequest(string Pin);
 public sealed record MyProfileResponse(Guid Id, string MemberNumber, string FullName, string PhoneNumber, string? Email, KycStatus KycStatus, DateOnly JoinedAt, NextOfKinDto NextOfKin);
-public sealed record MemberListItem(Guid Id, string MemberNumber, string FullName, string NationalIdNumber, string PhoneNumber, KycStatus KycStatus, DateOnly JoinedAt);
+public sealed record MemberListItem(Guid Id, string MemberNumber, string FullName, string NationalIdNumber, string PhoneNumber, KycStatus KycStatus, DateOnly JoinedAt, Guid? BranchId);
 
 public sealed record SubmitApplicationRequest(PersonalDetailsDto Details, NextOfKinDto NextOfKin, string TurnstileToken);
 public sealed record ApplicationResponse(Guid Id, PersonalDetailsDto Details, NextOfKinDto NextOfKin, ApplicationStatus Status, DateTimeOffset SubmittedAt, string Channel, Guid? ReviewedByUserId, DateTimeOffset? ReviewedAt, string? ReviewNotes, Guid? CreatedMemberId);
@@ -57,11 +59,12 @@ public sealed class MemberEndpoints : IModuleEndpoints
     {
         var g = app.MapGroup("/api/members").WithTags("Members");
 
-        g.MapGet("/", async (MembersDbContext db, string? search, KycStatus? status, int page = 1, int pageSize = 50, CancellationToken ct = default) =>
+        g.MapGet("/", async (MembersDbContext db, string? search, KycStatus? status, Guid? branchId, int page = 1, int pageSize = 50, CancellationToken ct = default) =>
         {
             pageSize = Math.Clamp(pageSize, 1, 200);
             var q = db.Members.AsNoTracking();
             if (status is KycStatus s) q = q.Where(m => m.KycStatus == s);
+            if (branchId is Guid branch) q = q.Where(m => m.BranchId == branch);
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var term = search.Trim();
@@ -71,7 +74,7 @@ public sealed class MemberEndpoints : IModuleEndpoints
             }
             var total = await q.CountAsync(ct);
             var items = await q.OrderBy(m => m.MemberNumber).Skip((page - 1) * pageSize).Take(pageSize)
-                .Select(m => new MemberListItem(m.Id, m.MemberNumber, m.Details.FirstName + " " + m.Details.LastName, m.Details.NationalIdNumber, m.Details.PhoneNumber, m.KycStatus, m.JoinedAt))
+                .Select(m => new MemberListItem(m.Id, m.MemberNumber, m.Details.FirstName + " " + m.Details.LastName, m.Details.NationalIdNumber, m.Details.PhoneNumber, m.KycStatus, m.JoinedAt, m.BranchId))
                 .ToListAsync(ct);
             return TypedResults.Ok(new PagedResult<MemberListItem>(items, page, pageSize, total));
         }).RequirePermission(Permissions.Members.View).WithName("ListMembers");
@@ -108,9 +111,13 @@ public sealed class MemberEndpoints : IModuleEndpoints
             return m is null ? TypedResults.NotFound() : TypedResults.Ok(ToResponse(m));
         }).RequirePermission(Permissions.Members.View).WithName("GetMemberByNumber");
 
+        g.MapPut("/{id:guid}/branch", async (Guid id, SetMemberBranchRequest req, MemberService members, ICurrentUser user, CancellationToken ct) =>
+            TypedResults.Ok(ToResponse(await members.SetBranchAsync(id, req.BranchId, user.UserId, ct))))
+            .RequirePermission(Permissions.Members.Edit).WithName("SetMemberBranch");
+
         g.MapPost("/", async (SaveMemberRequest req, MemberService members, ICurrentUser user, CancellationToken ct) =>
         {
-            var m = await members.RegisterAsync(null, null, req.Details.ToDomain(), req.NextOfKin.ToDomain(), MemberSource.StaffRegistered, null, user.UserId, ct);
+            var m = await members.RegisterAsync(null, null, req.Details.ToDomain(), req.NextOfKin.ToDomain(), MemberSource.StaffRegistered, null, user.UserId, ct, branchId: req.BranchId);
             return TypedResults.Created($"/api/members/{m.Id}", ToResponse(m));
         }).RequirePermission(Permissions.Members.Create).WithName("RegisterMember");
 
@@ -179,7 +186,7 @@ public sealed class MemberEndpoints : IModuleEndpoints
     private static MemberResponse ToResponse(Member m, bool selfService = false) => new(m.Id, m.MemberNumber, m.Details.FullName, PersonalDetailsDto.From(m.Details), NextOfKinDto.From(m.NextOfKin), m.KycStatus, m.Source, m.JoinedAt,
         m.RegisteredByUserId, m.KycVerifiedByUserId, m.KycVerifiedAt, m.KycRejectionReason, m.SuspensionReason,
         m.Documents.Select(d => new KycDocumentDto(d.Id, d.Type, d.FileReference, d.UploadedByUserId, d.UploadedAt)).ToList(),
-        m.ExitRequestedByUserId, m.ExitRequestedAt, m.ExitReason, m.ExitApprovedByUserId, m.ExitedAt, m.ExitSettlementJson, selfService);
+        m.ExitRequestedByUserId, m.ExitRequestedAt, m.ExitReason, m.ExitApprovedByUserId, m.ExitedAt, m.ExitSettlementJson, selfService, m.BranchId);
 
     private static ApplicationResponse ToResponse(MembershipApplication a) => new(a.Id, PersonalDetailsDto.From(a.Details), NextOfKinDto.From(a.NextOfKin), a.Status, a.SubmittedAt, a.Channel, a.ReviewedByUserId, a.ReviewedAt, a.ReviewNotes, a.CreatedMemberId);
 }

@@ -73,4 +73,8 @@ fetch calls against guessed endpoint shapes.
 - `/admin/reports` (ADR 0013): recipients for the nightly branded PDF digest, a "Preview PDF" link (`src/app/api/reporting/
   daily-digest/preview/route.ts`, the one BFF route that streams a binary body via `apiRaw()` in `lib/api.ts` rather than the
   JSON-only `api()` helper) and a "Send now" action.
+- Fee matrix and share transfers (ADR 0015): `/savings/fees` lists fee rules with approve/reject/deactivate and a Revise link
+  (`?revise={id}#propose` prefills the form with `supersedesRuleId`); `fee-rule-form.tsx` holds `FeeRuleForm` (client form with
+  conditional fields per charge/transaction type, dynamic tier bands, percent → bps) and `FeeCalculator` (quote endpoint).
+  `/savings/shares-marketplace` is the checker queue for member share sales. Both feed the dashboard stat cards and approvals queue.
 - Verify with `npm run lint && npm run build` in each app; both must stay clean.

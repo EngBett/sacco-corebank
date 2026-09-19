@@ -1,0 +1,271 @@
+@page "/settings"
+@using Microsoft.AspNetCore.Components.Web
+@rendermode RenderMode.InteractiveServer
+@attribute [Authorize]
+@using MockedMpesa.API.Data
+@using MockedMpesa.API.Models
+@using MongoDB.Driver
+@inject MockMpesaDbContext DbContext
+@inject NavigationManager Navigation
+
+<PageTitle>Mock M-Pesa Simulation Settings</PageTitle>
+
+<div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow bg-dark text-white">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">
+                        <i class="bi bi-gear-fill"></i> Mock M-Pesa Simulation Settings
+                    </h3>
+                </div>
+                <div class="card-body">
+                    @if (isLoading)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border text-success" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading settings...</p>
+                        </div>
+                    }
+                    else if (settings == null)
+                    {
+                        <div class="alert alert-warning">
+                            Settings not found. Please restart the service to seed default settings.
+                        </div>
+                    }
+                    else
+                    {
+                        <form @onsubmit="SaveSettings">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" 
+                                               id="globalSimulateFailure" @bind="settings.GlobalSimulateFailure">
+                                        <label class="form-check-label fw-bold" for="globalSimulateFailure">
+                                            Simulate All Failures
+                                        </label>
+                                        <small class="form-text text-muted d-block">
+                                            When enabled, all callbacks will return failure responses
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" 
+                                               id="globalSkipCallback" @bind="settings.GlobalSkipCallback">
+                                        <label class="form-check-label fw-bold" for="globalSkipCallback">
+                                            Skip All Callbacks
+                                        </label>
+                                        <small class="form-text text-muted d-block">
+                                            When enabled, callbacks will not be sent (simulates network issues)
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <h5 class="mb-3">Callback Delay Settings</h5>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="minDelayMs" class="form-label fw-bold">Minimum Delay (ms)</label>
+                                    <input type="number" class="form-control" id="minDelayMs" 
+                                           @bind="settings.MinDelayMs" min="0" max="@settings.MaxDelayMs">
+                                    <small class="form-text text-muted">
+                                        Minimum time before sending callback
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="maxDelayMs" class="form-label fw-bold">Maximum Delay (ms)</label>
+                                    <input type="number" class="form-control" id="maxDelayMs" 
+                                           @bind="settings.MaxDelayMs" min="@settings.MinDelayMs">
+                                    <small class="form-text text-muted">
+                                        Maximum time before sending callback
+                                    </small>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <h5 class="mb-3">Failure Response Settings</h5>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="failureResultCode" class="form-label fw-bold">Failure Result Code</label>
+                                    <input type="number" class="form-control" id="failureResultCode" 
+                                           @bind="settings.FailureResultCode" min="1">
+                                    <small class="form-text text-muted">
+                                        M-Pesa error code for failures (0 = success, 1+ = error)
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="failureResultDesc" class="form-label fw-bold">Failure Description</label>
+                                    <input type="text" class="form-control" id="failureResultDesc" 
+                                           @bind="settings.FailureResultDesc" maxlength="500">
+                                    <small class="form-text text-muted">
+                                        Error message returned in failure responses
+                                    </small>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(successMessage))
+                            {
+                                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                    <strong>Success!</strong> @successMessage
+                                    <button type="button" class="btn-close" @onclick="@(() => successMessage = null)"></button>
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <strong>Error!</strong> @errorMessage
+                                    <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+                                </div>
+                            }
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg" disabled="@isSaving">
+                                    @if (isSaving)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <span>Saving...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-save"></i>
+                                        <span>Save Settings</span>
+                                    }
+                                </button>
+                            </div>
+                        </form>
+
+                        @if (settings.UpdatedAt != default)
+                        {
+                            <div class="text-muted text-center mt-3">
+                                <small>Last updated: @settings.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</small>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <div class="card mt-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Links</h5>
+                    <div class="d-grid gap-2">
+                        <a href="/swagger" class="btn btn-outline-primary" target="_blank">
+                            <i class="bi bi-book"></i> API Documentation (Swagger)
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="ReloadSettings">
+                            <i class="bi bi-arrow-clockwise"></i> Reload Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+@code {
+    private SimulationSettings? settings;
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private string? successMessage;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSettings();
+    }
+
+    private async Task LoadSettings()
+    {
+        isLoading = true;
+        successMessage = null;
+        errorMessage = null;
+
+        try
+        {
+            settings = await DbContext.SimulationSettings
+                .Find(FilterDefinition<SimulationSettings>.Empty)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load settings: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveSettings()
+    {
+        if (settings == null) return;
+
+        isSaving = true;
+        successMessage = null;
+        errorMessage = null;
+
+        try
+        {
+            // Validation
+            if (settings.MinDelayMs > settings.MaxDelayMs)
+            {
+                errorMessage = "Minimum delay cannot be greater than maximum delay";
+                return;
+            }
+
+            if (settings.MinDelayMs < 0 || settings.MaxDelayMs < 0)
+            {
+                errorMessage = "Delay values must be positive";
+                return;
+            }
+
+            if (settings.FailureResultCode < 1)
+            {
+                errorMessage = "Failure result code must be at least 1";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(settings.FailureResultDesc))
+            {
+                errorMessage = "Failure description is required";
+                return;
+            }
+
+            settings.UpdatedAt = DateTime.UtcNow;
+            
+            var filter = Builders<SimulationSettings>.Filter.Eq(s => s.Id, settings.Id);
+            var update = Builders<SimulationSettings>.Update
+                .Set(s => s.GlobalSimulateFailure, settings.GlobalSimulateFailure)
+                .Set(s => s.GlobalSkipCallback, settings.GlobalSkipCallback)
+                .Set(s => s.MinDelayMs, settings.MinDelayMs)
+                .Set(s => s.MaxDelayMs, settings.MaxDelayMs)
+                .Set(s => s.FailureResultCode, settings.FailureResultCode)
+                .Set(s => s.FailureResultDesc, settings.FailureResultDesc)
+                .Set(s => s.UpdatedAt, settings.UpdatedAt);
+            
+            await DbContext.SimulationSettings.UpdateOneAsync(filter, update);
+
+            successMessage = "Settings saved successfully!";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to save settings: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task ReloadSettings()
+    {
+        await LoadSettings();
+        successMessage = "Settings reloaded";
+    }
+}

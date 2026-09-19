@@ -1,0 +1,196 @@
+@page "/transactions"
+@using Microsoft.AspNetCore.Components.Web
+@rendermode RenderMode.InteractiveServer
+@attribute [Authorize]
+@using MockedMpesa.API.Data
+@using MockedMpesa.API.Models
+@using MongoDB.Driver
+@inject MockMpesaDbContext DbContext
+@inject NavigationManager Navigation
+
+<PageTitle>Mock M-Pesa Transactions</PageTitle>
+
+<div class="card shadow bg-dark text-white">
+        <div class="card-header bg-success text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">
+                    <i class="bi bi-table"></i> Transaction History
+                </h3>
+                <button class="btn btn-light btn-sm" @onclick="RefreshTransactions">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            @if (isLoading)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading transactions...</p>
+                </div>
+            }
+            else if (transactions == null || !transactions.Any())
+            {
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-info-circle"></i> No transactions found. Initiate an STK Push to see transactions here.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped table-dark">
+                        <thead class="table-success">
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Merchant Request ID</th>
+                                <th>Checkout Request ID</th>
+                                <th>Phone</th>
+                                <th>Amount</th>
+                                <th>M-Pesa Receipt</th>
+                                <th>Callback Status</th>
+                                <th>Created At</th>
+                                <th>Callback Sent</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var txn in transactions)
+                            {
+                                <tr>
+                                    <td>@txn.Id</td>
+                                    <td>
+                                        <span class="badge bg-primary">@txn.TransactionType</span>
+                                    </td>
+                                    <td>
+                                        <small class="font-monospace">@txn.MerchantRequestId</small>
+                                    </td>
+                                    <td>
+                                        <small class="font-monospace">@txn.CheckoutRequestId</small>
+                                    </td>
+                                    <td>@txn.PhoneNumber</td>
+                                    <td class="text-end">
+                                        <strong>@txn.Amount.ToString("N2")</strong>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(txn.MpesaReceiptNumber))
+                                        {
+                                            <span class="badge bg-success">@txn.MpesaReceiptNumber</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (txn.CallbackStatus == "Success")
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> Success
+                                            </span>
+                                        }
+                                        else if (txn.CallbackStatus == "Failed")
+                                        {
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-x-circle"></i> Failed
+                                            </span>
+                                        }
+                                        else if (txn.CallbackStatus == "Skipped")
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-skip-forward"></i> Skipped
+                                            </span>
+                                        }
+                                        else if (txn.CallbackStatus == "Pending")
+                                        {
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-hourglass-split"></i> Pending
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <small>@txn.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</small>
+                                    </td>
+                                    <td>
+                                        @if (txn.CallbackSentAt.HasValue)
+                                        {
+                                            <small>@txn.CallbackSentAt.Value.ToString("HH:mm:ss")</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="text-muted">
+                        Showing @transactions.Count transaction(s)
+                    </div>
+                    @if (transactions.Count >= 100)
+                    {
+                        <div class="alert alert-warning mb-0">
+                            <small>Showing latest 100 transactions only</small>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mt-3">
+            <i class="bi bi-exclamation-triangle"></i> @errorMessage
+        </div>
+    }
+
+@code {
+    private List<TransactionRecord> transactions = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTransactions();
+    }
+
+    private async Task LoadTransactions()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            // Load latest 100 transactions ordered by most recent
+            transactions = await DbContext.Transactions
+                .Find(FilterDefinition<TransactionRecord>.Empty)
+                .SortByDescending(t => t.CreatedAt)
+                .Limit(100)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load transactions: {ex.Message}";
+            transactions = new List<TransactionRecord>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task RefreshTransactions()
+    {
+        await LoadTransactions();
+    }
+}

@@ -68,6 +68,31 @@ public sealed class MemberLoginService(IdentityDbContext db, TenantContext tenan
         return new AuthenticatedMember(login.Id, login.MemberId, login.DisplayName, login.PhoneNumber, login.TenantId);
     }
 
+    public enum PinCheck { Valid, Invalid, LockedOut }
+
+    /// <summary>
+    /// Re-checks the signed-in member's PIN (e.g. before showing balances). Failures share the sign-in lockout counter,
+    /// so an unlocked phone can't be used to guess the PIN either.
+    /// </summary>
+    public async Task<PinCheck> VerifyPinAsync(Guid loginId, string pin, CancellationToken ct)
+    {
+        var login = await db.MemberLogins.FirstOrDefaultAsync(l => l.Id == loginId && l.IsActive, ct)
+                    ?? throw new Sacco.Shared.Domain.NotFoundException("Member login", loginId);
+        var now = clock.UtcNow;
+        if (login.IsLockedOut(now)) return PinCheck.LockedOut;
+        if (Hasher.VerifyHashedPassword(login, login.PinHash, pin ?? "") == PasswordVerificationResult.Failed)
+        {
+            login.RecordFailedLogin(now);
+            await db.SaveChangesAsync(ct);
+            if (!login.IsLockedOut(now)) return PinCheck.Invalid;
+            await audit.RecordAsync(new AuditEvent("identity.member_login.locked_out", nameof(MemberLogin), login.Id.ToString(), login.Id, """{"via":"pin_check"}"""), ct);
+            return PinCheck.LockedOut;
+        }
+        login.RecordSuccessfulPinCheck();
+        await db.SaveChangesAsync(ct);
+        return PinCheck.Valid;
+    }
+
     public async Task<AuthenticatedMember?> FindActiveAsync(Guid tenantId, Guid loginId, CancellationToken ct)
     {
         var l = await db.MemberLogins.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Id == loginId && x.IsActive, ct);

@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using Sacco.Modules.Lending.Application;
 using Sacco.Modules.Lending.Domain;
 using Sacco.Modules.Lending.Persistence;
+using Sacco.Shared.Audit;
 using Sacco.Shared.Auth;
 using Sacco.Shared.Domain;
 using Sacco.Shared.Http;
@@ -19,12 +20,16 @@ using Sacco.Shared.Time;
 namespace Sacco.Modules.Lending.Endpoints;
 
 public sealed record LoanProductResponse(Guid Id, string Code, string Name, string? Description, Segment Segment, string ControlGlAccountCode, string InterestIncomeGlAccountCode, string InterestReceivableGlAccountCode, string FeeIncomeGlAccountCode, string ProvisionGlAccountCode, string ProvisionExpenseGlAccountCode,
-    int InterestRateBps, InterestMethod InterestMethod, decimal MinAmount, decimal MaxAmount, int MinTermMonths, int MaxTermMonths, decimal DepositMultiplier, int MinMembershipMonths, int ProcessingFeeBps, bool RequiresGuarantors, int MinGuarantors, decimal CommitteeThreshold, int CommitteeApprovalsRequired, int GracePeriodDays, bool IsActive);
+    int InterestRateBps, InterestMethod InterestMethod, decimal MinAmount, decimal MaxAmount, int MinTermMonths, int MaxTermMonths, decimal DepositMultiplier, int MinMembershipMonths, int ProcessingFeeBps, bool RequiresGuarantors, int MinGuarantors, decimal CommitteeThreshold, int CommitteeApprovalsRequired, int GracePeriodDays, bool IsActive,
+    LoanCategory Category, ProductListing Listing);
 public sealed record CreateLoanProductRequest(string Code, string Name, string? Description, Segment Segment, string ControlGlAccountCode, string InterestIncomeGlAccountCode, string InterestReceivableGlAccountCode, string FeeIncomeGlAccountCode, string ProvisionGlAccountCode, string ProvisionExpenseGlAccountCode,
     int InterestRateBps, InterestMethod InterestMethod, decimal MinAmount, decimal MaxAmount, int MinTermMonths, int MaxTermMonths, decimal DepositMultiplier, int MinMembershipMonths, int ProcessingFeeBps, bool RequiresGuarantors, int MinGuarantors, decimal CommitteeThreshold, int CommitteeApprovalsRequired, int GracePeriodDays);
 public sealed record UpdateLoanProductRequest(string Name, string? Description, int InterestRateBps, decimal MinAmount, decimal MaxAmount, int MinTermMonths, int MaxTermMonths, decimal DepositMultiplier, int MinMembershipMonths, int ProcessingFeeBps, bool RequiresGuarantors, int MinGuarantors, decimal CommitteeThreshold, int CommitteeApprovalsRequired, int GracePeriodDays, bool IsActive);
 
-public sealed record PublicLoanProduct(string Code, string Name, string? Description, Segment Segment, int InterestRateBps, InterestMethod InterestMethod, decimal MinAmount, decimal MaxAmount, int MinTermMonths, int MaxTermMonths, decimal DepositMultiplier, int MinMembershipMonths, bool RequiresGuarantors, int MinGuarantors);
+public sealed record PublicLoanProduct(string Code, string Name, string? Description, Segment Segment, int InterestRateBps, InterestMethod InterestMethod, decimal MinAmount, decimal MaxAmount, int MinTermMonths, int MaxTermMonths, decimal DepositMultiplier, int MinMembershipMonths, bool RequiresGuarantors, int MinGuarantors,
+    LoanCategory Category, IReadOnlyList<string> Features, IReadOnlyList<string> Requirements, string? AmountNote, string? ApplicationFormUrl, int DisplayOrder);
+/// <summary>The public-website presentation of a loan product: which group it's listed under, plus its listing.</summary>
+public sealed record LoanProductListingRequest(LoanCategory Category, ProductListing Listing);
 public sealed record ApplyLoanRequest(Guid MemberId, string ProductCode, decimal Amount, int TermMonths, string Purpose, string? DisbursementAccountNumber, bool BureauConsent = false);
 public sealed record SelfApplyLoanRequest(string ProductCode, decimal Amount, int TermMonths, string Purpose, bool BureauConsent);
 public sealed record RestructureRequest(int NewTermMonths, int? NewInterestRateBps, string Reason);
@@ -62,27 +67,45 @@ public sealed class LendingEndpoints(IHostEnvironment env) : IModuleEndpoints
         var products = app.MapGroup("/api/loans/products").WithTags("Loan products");
         products.MapGet("", async (LendingDbContext db, CancellationToken ct) => TypedResults.Ok((await db.Products.AsNoTracking().OrderBy(p => p.Code).ToListAsync(ct)).Select(ToResponse).ToList()))
             .RequirePermission(Permissions.Loans.View).WithName("ListLoanProducts");
-        products.MapPost("", async (CreateLoanProductRequest r, LendingDbContext db, ITenantContext tenant, CancellationToken ct) =>
+        products.MapPost("", async (CreateLoanProductRequest r, LendingDbContext db, ITenantContext tenant, IAuditLogger audit, ICurrentUser user, CancellationToken ct) =>
         {
             var p = LoanProduct.Create(Ids.New(), tenant.TenantId, r.Code, r.Name, r.Description, r.Segment, r.ControlGlAccountCode, r.InterestIncomeGlAccountCode, r.InterestReceivableGlAccountCode, r.FeeIncomeGlAccountCode, r.ProvisionGlAccountCode, r.ProvisionExpenseGlAccountCode,
                 r.InterestRateBps, r.InterestMethod, r.MinAmount, r.MaxAmount, r.MinTermMonths, r.MaxTermMonths, r.DepositMultiplier, r.MinMembershipMonths, r.ProcessingFeeBps, r.RequiresGuarantors, r.MinGuarantors, r.CommitteeThreshold, r.CommitteeApprovalsRequired, r.GracePeriodDays);
             db.Products.Add(p);
             try { await db.SaveChangesAsync(ct); }
             catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "23505" }) { throw new ConflictException("loans.product.duplicate", $"Product {r.Code} already exists."); }
+            await audit.RecordAsync(new AuditEvent("loans.product.created", nameof(LoanProduct), p.Code, user.UserId,
+                AuditDetails.New().With("name", p.Name).With("segment", p.Segment.ToString()).With("interestBps", p.InterestRateBps).With("method", p.InterestMethod.ToString()).ToJson()), ct);
             return TypedResults.Created($"/api/loans/products/{p.Code}", ToResponse(p));
         }).RequirePermission(Permissions.Loans.ProductsManage).WithName("CreateLoanProduct");
-        products.MapPut("/{code}", async (string code, UpdateLoanProductRequest r, LoanService loans, LendingDbContext db, CancellationToken ct) =>
+        products.MapPut("/{code}", async (string code, UpdateLoanProductRequest r, LoanService loans, LendingDbContext db, IAuditLogger audit, ICurrentUser user, CancellationToken ct) =>
         {
             var p = await loans.GetProductAsync(code, ct);
+            var before = new { rateBps = p.InterestRateBps, maxAmount = p.MaxAmount, maxTermMonths = p.MaxTermMonths, multiplier = p.DepositMultiplier, active = p.IsActive };
             p.Update(r.Name, r.Description, r.InterestRateBps, r.MinAmount, r.MaxAmount, r.MinTermMonths, r.MaxTermMonths, r.DepositMultiplier, r.MinMembershipMonths, r.ProcessingFeeBps, r.RequiresGuarantors, r.MinGuarantors, r.CommitteeThreshold, r.CommitteeApprovalsRequired, r.GracePeriodDays, r.IsActive);
             await db.SaveChangesAsync(ct);
+            await audit.RecordAsync(new AuditEvent("loans.product.updated", nameof(LoanProduct), p.Code, user.UserId,
+                AuditDetails.New().With("before", before)
+                    .With("after", new { rateBps = p.InterestRateBps, maxAmount = p.MaxAmount, maxTermMonths = p.MaxTermMonths, multiplier = p.DepositMultiplier, active = p.IsActive }).ToJson()), ct);
             return TypedResults.Ok(ToResponse(p));
         }).RequirePermission(Permissions.Loans.ProductsManage).WithName("UpdateLoanProduct");
+        // Public-website presentation only; never changes eligibility, pricing or approval rules.
+        products.MapPut("/{code}/listing", async (string code, LoanProductListingRequest r, LoanService loans, LendingDbContext db, IAuditLogger audit, ICurrentUser user, CancellationToken ct) =>
+        {
+            var p = await loans.GetProductAsync(code, ct);
+            var (wasShown, wasCategory) = (p.Listing.ShowOnPublicSite, p.Category);
+            p.SetListing(r.Category, r.Listing.ToDomain());
+            await db.SaveChangesAsync(ct);
+            await audit.RecordAsync(new AuditEvent("loans.product.listing_changed", nameof(LoanProduct), p.Code, user.UserId,
+                AuditDetails.New().Changed("category", wasCategory.ToString(), p.Category.ToString()).Changed("shownOnPublicSite", wasShown, p.Listing.ShowOnPublicSite).ToJson()), ct);
+            return TypedResults.Ok(ToResponse(p));
+        }).RequirePermission(Permissions.Loans.ProductsManage).WithName("UpdateLoanProductListing");
 
         app.MapGet("/api/public/products/loans", async (LendingDbContext db, CancellationToken ct) =>
-            TypedResults.Ok((await db.Products.AsNoTracking().Where(p => p.IsActive).OrderBy(p => p.Code).ToListAsync(ct))
-                .Select(p => new PublicLoanProduct(p.Code, p.Name, p.Description, p.Segment, p.InterestRateBps, p.InterestMethod, p.MinAmount, p.MaxAmount, p.MinTermMonths, p.MaxTermMonths, p.DepositMultiplier, p.MinMembershipMonths, p.RequiresGuarantors, p.MinGuarantors)).ToList()))
-            .RequireRateLimiting("public").WithTags("Public").WithName("ListPublicLoanProducts");
+            TypedResults.Ok((await db.Products.AsNoTracking().Where(p => p.IsActive && p.Listing.ShowOnPublicSite).OrderBy(p => p.Category).ThenBy(p => p.Listing.DisplayOrder).ThenBy(p => p.Name).ToListAsync(ct))
+                .Select(p => new PublicLoanProduct(p.Code, p.Name, p.Description, p.Segment, p.InterestRateBps, p.InterestMethod, p.MinAmount, p.MaxAmount, p.MinTermMonths, p.MaxTermMonths, p.DepositMultiplier, p.MinMembershipMonths, p.RequiresGuarantors, p.MinGuarantors,
+                    p.Category, p.Listing.Features, p.Listing.Requirements, p.Listing.AmountNote, p.Listing.ApplicationFormUrl, p.Listing.DisplayOrder)).ToList()))
+            .RequireRateLimiting("public-read").WithTags("Public").WithName("ListPublicLoanProducts");
 
         var g = app.MapGroup("/api/loans").WithTags("Loans");
         g.MapGet("", async (LendingDbContext db, CreditScoringService scoring, LoanStatus? status, Guid? memberId, int page = 1, int pageSize = 50, CancellationToken ct = default) =>
@@ -126,7 +149,12 @@ public sealed class LendingEndpoints(IHostEnvironment env) : IModuleEndpoints
             .RequirePermission(Permissions.Loans.Approve).WithName("RejectLoanAdjustment");
         g.MapGet("/bureau-consent", (IOptions<LendingSettings> settings) => TypedResults.Ok(new BureauConsentInfo(settings.Value.CreditBureau.RequireConsent, settings.Value.CreditBureau.ConsentText)))
             .RequirePermission(Permissions.Loans.View).WithName("GetBureauConsentText");
-        g.MapPost("/maintenance/run", async (LendingMaintenanceService maintenance, CancellationToken ct) => TypedResults.Ok(await maintenance.RunOnceAsync(ct)))
+        g.MapPost("/maintenance/run", async (LendingMaintenanceService maintenance, IAuditLogger audit, ICurrentUser user, CancellationToken ct) =>
+        {
+            var result = await maintenance.RunOnceAsync(ct);
+            await audit.RecordAsync(new AuditEvent("loans.maintenance.run", "LendingMaintenance", DateTime.UtcNow.ToString("O"), user.UserId, AuditDetails.New().With("result", result).ToJson()), ct);
+            return TypedResults.Ok(result);
+        })
             .RequirePermission(Permissions.Admin.ConfigManage).WithName("RunLendingMaintenance");
 
         // ---- Member self-service: the member behind the token, nobody else ----
@@ -222,7 +250,8 @@ public sealed class LendingEndpoints(IHostEnvironment env) : IModuleEndpoints
     }
 
     private static LoanProductResponse ToResponse(LoanProduct p) => new(p.Id, p.Code, p.Name, p.Description, p.Segment, p.ControlGlAccountCode, p.InterestIncomeGlAccountCode, p.InterestReceivableGlAccountCode, p.FeeIncomeGlAccountCode, p.ProvisionGlAccountCode, p.ProvisionExpenseGlAccountCode,
-        p.InterestRateBps, p.InterestMethod, p.MinAmount, p.MaxAmount, p.MinTermMonths, p.MaxTermMonths, p.DepositMultiplier, p.MinMembershipMonths, p.ProcessingFeeBps, p.RequiresGuarantors, p.MinGuarantors, p.CommitteeThreshold, p.CommitteeApprovalsRequired, p.GracePeriodDays, p.IsActive);
+        p.InterestRateBps, p.InterestMethod, p.MinAmount, p.MaxAmount, p.MinTermMonths, p.MaxTermMonths, p.DepositMultiplier, p.MinMembershipMonths, p.ProcessingFeeBps, p.RequiresGuarantors, p.MinGuarantors, p.CommitteeThreshold, p.CommitteeApprovalsRequired, p.GracePeriodDays, p.IsActive,
+        p.Category, ProductListing.From(p.Listing));
     private static EligibilityResponse ToResponse(EligibilitySnapshot e) => new(e.BosaDeposits, e.Shares, e.DepositMultiplier, e.MaxEligibleAmount, e.MembershipMonths, e.ContributionMonths, e.ExistingOutstanding);
     private static GuarantorResponse ToResponse(LoanGuarantor g) => new(g.Id, g.GuarantorMemberId, g.DepositsAccountNumber, g.AmountGuaranteed, g.Status, g.AddedAt, g.AcceptedAt);
     private static CreditScoreSummary Summary(LoanCreditScore s) => new(s.Score, s.Grade, s.Recommendation, s.BureauStatus, s.Stage, s.ComputedAt);

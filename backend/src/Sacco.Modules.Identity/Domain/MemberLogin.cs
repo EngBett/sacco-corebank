@@ -49,6 +49,8 @@ public class MemberLogin : TenantEntity
     public bool IsLockedOut(DateTimeOffset now) => LockedOutUntil is { } until && until > now;
     public void RecordFailedLogin(DateTimeOffset now) { FailedAttempts++; if (FailedAttempts >= MaxFailedAttempts) { LockedOutUntil = now + LockoutDuration; FailedAttempts = 0; } }
     public void RecordSuccessfulLogin(DateTimeOffset now) { FailedAttempts = 0; LockedOutUntil = null; LastLoginAt = now; }
+    /// <summary>A correct PIN re-entered inside a session (e.g. to show balances) clears the failure count without counting as a sign-in.</summary>
+    public void RecordSuccessfulPinCheck() { FailedAttempts = 0; }
     public void Reset(string displayName, string phoneNumber, string pinHash) { DisplayName = displayName.Trim(); PhoneNumber = NormalisePhone(phoneNumber); PinHash = pinHash; IsActive = true; FailedAttempts = 0; LockedOutUntil = null; }
     public void Deactivate() => IsActive = false;
 }

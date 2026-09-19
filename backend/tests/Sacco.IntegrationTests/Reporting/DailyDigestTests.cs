@@ -25,12 +25,12 @@ public sealed class DailyDigestTests(PostgresFixture pg) : IDisposable
         (await Teller.GetAsync("/api/reporting/daily-digest/recipients")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
 
         var seeded = await (await Admin.GetAsync("/api/reporting/daily-digest/recipients")).ReadAs<List<ReportRecipientResponse>>();
-        seeded.ShouldContain(r => r.Email == "admin@demosacco.example.co.ke", "the seed tool adds a demo recipient so the feature is demoable out of the box");
+        seeded.ShouldContain(r => r.Email == "admin@icodeio.example.co.ke", "the seed tool adds a demo recipient so the feature is demoable out of the box");
 
-        var added = await (await Admin.PostAsJsonAsync("/api/reporting/daily-digest/recipients", new AddRecipientRequest("Board.Chair@DemoSacco.example.co.ke", "Board Chair"), HttpExtensions.JsonOptions)).ReadAs<ReportRecipientResponse>();
-        added.Email.ShouldBe("board.chair@demosacco.example.co.ke");
+        var added = await (await Admin.PostAsJsonAsync("/api/reporting/daily-digest/recipients", new AddRecipientRequest("Board.Chair@Icodeio.example.co.ke", "Board Chair"), HttpExtensions.JsonOptions)).ReadAs<ReportRecipientResponse>();
+        added.Email.ShouldBe("board.chair@icodeio.example.co.ke");
 
-        var dup = await Admin.PostAsJsonAsync("/api/reporting/daily-digest/recipients", new AddRecipientRequest("board.chair@demosacco.example.co.ke", "Again"), HttpExtensions.JsonOptions);
+        var dup = await Admin.PostAsJsonAsync("/api/reporting/daily-digest/recipients", new AddRecipientRequest("board.chair@icodeio.example.co.ke", "Again"), HttpExtensions.JsonOptions);
         dup.StatusCode.ShouldBe(HttpStatusCode.Conflict);
 
         var invalid = await Admin.PostAsJsonAsync("/api/reporting/daily-digest/recipients", new AddRecipientRequest("not-an-email", "x"), HttpExtensions.JsonOptions);
@@ -68,6 +68,6 @@ public sealed class DailyDigestTests(PostgresFixture pg) : IDisposable
         emptyRun.RecipientCount.ShouldBe(0);
 
         // Re-seed the recipient other tests in this fixture expect, since the fixture's database is shared across tests.
-        await Admin.PostAsJsonAsync("/api/reporting/daily-digest/recipients", new AddRecipientRequest("admin@demosacco.example.co.ke", "Grace Wanjiku (System Admin)"), HttpExtensions.JsonOptions);
+        await Admin.PostAsJsonAsync("/api/reporting/daily-digest/recipients", new AddRecipientRequest("admin@icodeio.example.co.ke", "Grace Wanjiku (System Admin)"), HttpExtensions.JsonOptions);
     }
 }

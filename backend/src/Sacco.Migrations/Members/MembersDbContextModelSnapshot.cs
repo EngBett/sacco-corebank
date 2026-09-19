@@ -72,6 +72,10 @@ namespace Sacco.Migrations.Members
                         .HasColumnType("uuid")
                         .HasColumnName("application_id");
 
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -154,6 +158,9 @@ namespace Sacco.Migrations.Members
 
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_members_tenant_id");
+
+                    b.HasIndex("TenantId", "BranchId")
+                        .HasDatabaseName("ix_members_tenant_id_branch_id");
 
                     b.HasIndex("TenantId", "KycStatus")
                         .HasDatabaseName("ix_members_tenant_id_kyc_status");

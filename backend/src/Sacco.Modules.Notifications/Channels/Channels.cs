@@ -111,13 +111,6 @@ public sealed class DeliverySettings
     public List<string> SmsKindPrefixes { get; set; } = ["ledger.journal.pending", "savings.withdrawal.pending", "loans.pending_approval", "loans.ready_to_disburse", "loans.writeoff.pending", "loans.restructure.pending", "members.exit.pending", "payments.failed", "savings.withdrawal.payout_failed"];
 }
 
-public interface ISmsSender
-{
-    string Name { get; }
-    bool IsSandbox { get; }
-    Task<string?> SendAsync(string phoneNumber, string body, CancellationToken ct);
-}
-
 /// <summary>No gateway: the outbox row is the delivery. Returns a deterministic-looking reference so demos read like the real thing.</summary>
 public sealed class SandboxSmsSender : ISmsSender
 {

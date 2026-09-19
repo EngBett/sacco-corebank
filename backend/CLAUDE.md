@@ -76,6 +76,19 @@ tenant query filter and snake_case naming.
 - Deposits are idempotent on the caller's receipt/transaction reference (`DEP:<reference>`).
 - `SavingsSettings` maps the GL codes the module posts to; defaults match the demo chart of accounts.
 
+## Fee matrix (ADR 0015)
+
+- `FeeRule` rows price `Deposit`/`Withdrawal`/`BalanceEnquiry` by channel (null = any), product (null = all) and amount range
+  as `Fixed`, `Percentage` (bps + optional caps) or `Tiered` (ascending `UpTo` bands). `FeeMatrixService.QuoteAsync` picks the
+  most specific active rule; no match → product `WithdrawalFee` for withdrawals, free otherwise. Internal deposits are never charged.
+- Maker-checker: `savings.fees.manage` proposes, a different `savings.fees.approve` holder approves; revisions carry
+  `SupersedesRuleId` and retire the old rule on approval; overlapping active rules are refused (`savings.fees.overlap`).
+- A withdrawal stores its fee, fee GL and segment at request time; deposit fees post inside the deposit journal;
+  `PostingBuilder.Fee` bridges when the income GL's segment differs from the account's.
+- Balance-enquiry rules gate self-service balances (`BalanceEnquiryService`, shared `IBalanceVisibility` used by Ledger's self
+  statement). Paying debits the member's FOSA account and opens a `Savings:BalanceRevealMinutes` window; idempotent per key.
+- `POST /api/self/auth/pin/verify` re-checks a member's PIN (200 `{valid, lockedOut}`), sharing the sign-in lockout counter.
+
 ## Lending (Phase 4)
 
 - Eligibility reads BOSA deposits/shares via `ISavingsService.GetMemberSummaryAsync` and member standing via
@@ -144,6 +157,45 @@ tenant query filter and snake_case naming.
   `ReportRecipient` rows (`Permissions.Reporting.RecipientsManage`), not staff users — a board member needs no portal login to
   receive the email. `/api/reporting/daily-digest/preview.pdf` and `/run` let an admin see or send today's digest on demand.
 
+## Branches and the audit trail (ADR 0018, ADR 0019)
+
+- A branch is a **dimension on one set of books**, never a second ledger. `platform.branches` (unique 2–10 char code,
+  exactly one head office) is reached from other modules through `IBranchDirectory` (Sacco.Shared). `branch_id` hangs off
+  staff users (issued as the `branch_id` claim, read via `ICurrentUser.BranchId`), members (defaults to the registering
+  user's branch, then head office) and journal entries (`PostingRequest.BranchId ?? currentUser.BranchId`; a reversal keeps
+  the original's). It filters and reports — it never decides what a user may do. Null means "not assigned", which is what a
+  single-office SACCO and all pre-branch history look like.
+- Every audit row is enriched by `IAuditContext` (actor name, IP, user agent, correlation id, branch) — `HttpAuditContext`
+  in the API host, `NullAuditContext` elsewhere — so callers pass only the event. Build `Details` with `AuditDetails`
+  (`With`, `Changed` for from/to pairs, `Diff` for added/removed); never hand-format that JSON. Record failures too:
+  `AuditOutcome.Failure`/`Denied` for refused sign-ins, lockouts and blocked callbacks.
+- Rows are hash-chained per tenant under a `pg_advisory_xact_lock`, and a `BEFORE UPDATE OR DELETE` trigger makes the table
+  append-only in the database. `details` is **text, not jsonb** — jsonb re-formats on read and would break every hash.
+  `GET /api/admin/audit-log` (filters, paging), `export.csv` (audited) and `/verify` (recomputes the chain) are behind
+  `admin.audit.view`.
+- `Demo` in configuration (`Enabled`, `Message`, `PurchaseUrl`, `ContactEmail`) marks a deployment as a demonstration:
+  `GET /api/public/tenant/branding` then carries a `demo` notice and both websites show a banner. It changes nothing else —
+  it is not a feature switch, and no code may read it to alter behaviour.
+
+## Public website content (ADR 0017)
+
+- Savings and loan products own a `PublicListing` (Sacco.Shared: show on site, order, features, requirements, amount note, form link),
+  edited via `PUT /api/{savings|loans}/products/{code}/listing`; loans also carry `LoanCategory` (Fosa/Bosa/Msme, defaults to segment).
+  Listings are presentation only — never read them in business rules.
+- `platform.public_services` (Platform module) lists member services for the website; `GET /api/public/services`. Public catalogue reads
+  use the per-IP `public-read` rate limit. Demo content lives in `seed/Sacco.Seed/Data/PublicCatalogue.cs`.
+
+## Staff onboarding, password reset and 2FA (ADR 0016)
+
+- Staff are invited, never given a password: `StaffInvitationService` (propose with `admin.users.invite` or `admin.users.manage`;
+  a proposal from an invite-only user needs a different `admin.users.manage` holder to approve). Approval creates an unactivated
+  `StaffUser` and emails a single-use activation link (`StaffAccountService`, hashed `staff_account_tokens`, 72 h; reset links 60 min).
+- Interactive staff sign-in is two-step: a correct password only sets the short-lived `sacco.mfa` ticket cookie; `/account/mfa/setup`
+  (QR + recovery codes, first time) or `/account/mfa` completes the IdentityServer sign-in. TOTP is RFC 6238 (`Application/Mfa/Totp`),
+  secrets AES-GCM-encrypted with `Identity:Mfa` keys (`TotpSecretProtector`); wrong codes share the password lockout.
+- The staff password grant (`sacco-cli`) is refused in Production. Account pages are server-rendered by `AccountPages` and rate-limited
+  per IP (`account` policy). Tests read emailed links from `ApiFactory.Email`.
+
 ## Member self-service (ADR 0008)
 
 - `identity.member_logins`: phone + PIN, provisioned from the Members module through `IMemberLoginProvisioner`. The password
@@ -190,7 +242,7 @@ tenant query filter and snake_case naming.
 
 ```bash
 docker compose up -d postgres mailpit mocked-sms     # from repo root — mailpit/mocked-sms are the local mail/SMS channels
-dotnet run --project backend/seed/Sacco.Seed        # migrate + seed Demo SACCO (idempotent; add -- --reset to rebuild)
+dotnet run --project backend/seed/Sacco.Seed        # migrate + seed Icodeio SACCO (idempotent; add -- --reset to rebuild)
 dotnet run --project backend/src/Sacco.Api          # http://localhost:5000/scalar for the API reference
 dotnet test --project backend/tests/Sacco.UnitTests
 dotnet test --project backend/tests/Sacco.IntegrationTests   # needs Docker (Testcontainers) or SACCO_TEST_CONNECTION

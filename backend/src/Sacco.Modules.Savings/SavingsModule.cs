@@ -18,6 +18,10 @@ public static class SavingsModule
         services.AddScoped<SavingsService>();
         services.AddScoped<ISavingsService>(sp => sp.GetRequiredService<SavingsService>());
         services.AddScoped<DividendService>();
+        services.AddScoped<ShareMarketplaceService>();
+        services.AddScoped<FeeMatrixService>();
+        services.AddScoped<BalanceEnquiryService>();
+        services.AddScoped<IBalanceVisibility>(sp => sp.GetRequiredService<BalanceEnquiryService>());
         services.AddSingleton<IModuleEndpoints, SavingsEndpoints>();
         return services;
     }

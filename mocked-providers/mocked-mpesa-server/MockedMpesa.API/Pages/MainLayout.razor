@@ -1,0 +1,71 @@
+@using Microsoft.AspNetCore.Authentication
+@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@inject IHttpContextAccessor HttpContextAccessor
+
+<div class="container-fluid" data-bs-theme="dark">
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/transactions">
+                <i class="bi bi-currency-exchange"></i> Mock M-Pesa Admin
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link @(IsActive("/transactions") ? "active" : "")" href="/transactions">
+                            <i class="bi bi-list-ul"></i> Transactions
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(IsActive("/c2b-registrations") ? "active" : "")" href="/c2b-registrations">
+                            <i class="bi bi-shield-check"></i> C2B Registrations
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(IsActive("/settings") ? "active" : "")" href="/settings">
+                            <i class="bi bi-gear-fill"></i> Settings
+                        </a>
+                    </li>
+                </ul>
+                <AuthorizeView>
+                    <Authorized>
+                        <div class="d-flex align-items-center">
+                            <span class="navbar-text text-white me-3">
+                                <i class="bi bi-person-circle"></i> @context.User.Identity?.Name
+                            </span>
+                            <button class="btn btn-outline-danger btn-sm" @onclick="HandleLogout">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </button>
+                        </div>
+                    </Authorized>
+                </AuthorizeView>
+            </div>
+        </div>
+    </nav>
+
+    <div class="content">
+        @Body
+    </div>
+</div>
+
+@code {
+    private bool IsActive(string path)
+    {
+        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        return currentPath.StartsWith(path.TrimStart('/'), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task HandleLogout()
+    {
+        var httpContext = HttpContextAccessor.HttpContext;
+        if (httpContext != null)
+        {
+            await httpContext.SignOutAsync("MpesaAuth");
+            Navigation.NavigateTo("/login", forceLoad: true);
+        }
+    }
+}

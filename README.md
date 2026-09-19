@@ -28,7 +28,7 @@ See `docs/integrations/payment-providers.md` and `docs/runbooks/production-cutov
 
 ```bash
 docker compose up -d postgres                       # Postgres 16 on localhost:5432 (sacco/sacco)
-dotnet run --project backend/seed/Sacco.Seed        # create db, migrate all modules, seed the Demo SACCO
+dotnet run --project backend/seed/Sacco.Seed        # create db, migrate all modules, seed the Icodeio SACCO
 dotnet run --project backend/src/Sacco.Api          # API + OIDC server on http://localhost:5000 (Scalar UI at /scalar)
 cd frontend/portal && npm install && npm run dev    # staff portal on http://localhost:3000 (live notifications via the API's SignalR hub)
 cd frontend/public-site && npm install && npm run dev   # public site on http://localhost:3001

@@ -33,6 +33,11 @@ public class SavingsProduct : TenantEntity
     public int? TermMonths { get; private set; }
     public bool IsActive { get; private set; }
 
+    /// <summary>How the product appears on the public website (features, requirements, order, visibility).</summary>
+    public PublicListing Listing { get; private set; } = new();
+
+    public void SetListing(PublicListing listing) => Listing = listing;
+
     public static SavingsProduct Create(Guid id, Guid tenantId, string code, string name, string? description, ProductKind kind, Segment segment, string controlGl, string suffix,
         decimal minOpening, decimal minBalance, bool allowsWithdrawals, int noticeDays, decimal tellerLimit, decimal withdrawalFee, string? feeGl, int rateBps, string? interestGl, int? termMonths)
     {

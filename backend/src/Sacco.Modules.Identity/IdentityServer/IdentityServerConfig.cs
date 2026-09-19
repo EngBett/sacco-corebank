@@ -51,7 +51,7 @@ public static class IdentityServerConfig
         new ApiResource(ApiScopeName, "SACCO Platform API")
         {
             Scopes = { ApiScopeName },
-            UserClaims = { "name", "email", "preferred_username", "role", TenantClaim },
+            UserClaims = { "name", "email", "preferred_username", "role", TenantClaim, SubjectClaims.MemberIdClaim, SubjectClaims.BranchIdClaim },
         },
     ];
 

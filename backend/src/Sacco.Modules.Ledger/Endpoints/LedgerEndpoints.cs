@@ -10,6 +10,7 @@ using Sacco.Shared.Auth;
 using Sacco.Shared.Domain;
 using Sacco.Shared.Http;
 using Sacco.Shared.Ledger;
+using Sacco.Shared.Savings;
 using Sacco.Shared.Time;
 
 namespace Sacco.Modules.Ledger.Endpoints;
@@ -24,7 +25,7 @@ public sealed record ReverseJournalRequest(string Reason);
 
 public sealed record JournalLineResponse(int LineNumber, string GlAccountCode, string? LedgerAccountNumber, Segment Segment, EntryDirection Direction, decimal Amount, string? Narrative);
 public sealed record JournalResponse(Guid Id, string Reference, string Description, DateOnly ValueDate, string Source, JournalEntryStatus Status, decimal TotalAmount,
-    Guid InitiatedByUserId, DateTimeOffset InitiatedAt, Guid? ApprovedByUserId, DateTimeOffset? PostedAt, string? RejectionReason, Guid? ReversalOfEntryId, Guid? ReversedByEntryId, IReadOnlyList<JournalLineResponse> Lines);
+    Guid InitiatedByUserId, DateTimeOffset InitiatedAt, Guid? ApprovedByUserId, DateTimeOffset? PostedAt, string? RejectionReason, Guid? ReversalOfEntryId, Guid? ReversedByEntryId, Guid? BranchId, IReadOnlyList<JournalLineResponse> Lines);
 
 public sealed class LedgerEndpoints : IModuleEndpoints
 {
@@ -78,10 +79,13 @@ public sealed class LedgerEndpoints : IModuleEndpoints
             return statement is null ? TypedResults.NotFound() : TypedResults.Ok(statement);
         }).RequirePermission(Permissions.Ledger.View).WithName("GetAccountStatement");
 
-        app.MapGet("/api/self/statements/{accountNumber}", async Task<Results<Ok<AccountStatement>, NotFound>> (string accountNumber, LedgerQueries queries, ILedgerService ledger, IClock clock, ICurrentUser user, DateOnly? from, DateOnly? to, CancellationToken ct) =>
+        app.MapGet("/api/self/statements/{accountNumber}", async Task<Results<Ok<AccountStatement>, NotFound>> (string accountNumber, LedgerQueries queries, ILedgerService ledger, IBalanceVisibility visibility, IClock clock, ICurrentUser user, DateOnly? from, DateOnly? to, CancellationToken ct) =>
         {
             var account = await ledger.FindAccountAsync(accountNumber, ct);
             if (account is null || account.MemberId != user.RequireMemberId()) return TypedResults.NotFound(); // another member's account is invisible, not forbidden
+            // Running balances would leak a fee-gated balance (ADR 0015): the member pays for a reveal window first.
+            if (!await visibility.IsBalanceVisibleAsync(account.MemberId, accountNumber, ct))
+                throw new DomainRuleException("savings.balance.locked", "This account's balance is shown after a paid balance enquiry.");
             var statement = await queries.StatementAsync(accountNumber, from ?? clock.Today.AddMonths(-3), to ?? clock.Today, ct);
             return statement is null ? TypedResults.NotFound() : TypedResults.Ok(statement);
         }).RequirePermission(Permissions.Self.StatementsView).WithTags("Self-service").WithName("GetMyStatement");
@@ -93,11 +97,12 @@ public sealed class LedgerEndpoints : IModuleEndpoints
         }).RequirePermission(Permissions.Ledger.AccountsManage).WithName("SetLedgerAccountStatus");
 
         // ---- Journals (manual journals are maker-checker) ----
-        g.MapGet("/journals", async (LedgerDbContext db, JournalEntryStatus? status, int page = 1, int pageSize = 50, CancellationToken ct = default) =>
+        g.MapGet("/journals", async (LedgerDbContext db, JournalEntryStatus? status, Guid? branchId, int page = 1, int pageSize = 50, CancellationToken ct = default) =>
         {
             pageSize = Math.Clamp(pageSize, 1, 200);
             var q = db.JournalEntries.AsNoTracking();
             if (status is JournalEntryStatus st) q = q.Where(e => e.Status == st);
+            if (branchId is Guid branch) q = q.Where(e => e.BranchId == branch);
             var total = await q.CountAsync(ct);
             var items = await q.OrderByDescending(e => e.InitiatedAt).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
             return TypedResults.Ok(new PagedResult<JournalResponse>(items.Select(ToResponse).ToList(), page, pageSize, total));
@@ -144,6 +149,6 @@ public sealed class LedgerEndpoints : IModuleEndpoints
 
     private static JournalResponse ToResponse(JournalEntry e) =>
         new(e.Id, e.Reference, e.Description, e.ValueDate, e.Source, e.Status, e.TotalAmount, e.InitiatedByUserId, e.InitiatedAt, e.ApprovedByUserId, e.PostedAt,
-            e.RejectionReason, e.ReversalOfEntryId, e.ReversedByEntryId,
+            e.RejectionReason, e.ReversalOfEntryId, e.ReversedByEntryId, e.BranchId,
             e.Lines.OrderBy(l => l.LineNumber).Select(l => new JournalLineResponse(l.LineNumber, l.GlAccountCode, l.LedgerAccountNumber, l.Segment, l.Direction, l.Amount, l.Narrative)).ToList());
 }

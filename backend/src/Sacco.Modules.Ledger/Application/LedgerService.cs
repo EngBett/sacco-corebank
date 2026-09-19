@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Sacco.Modules.Ledger.Domain;
 using Sacco.Modules.Ledger.Persistence;
+using Sacco.Shared.Auth;
 using Sacco.Shared.Domain;
 using Sacco.Shared.Ledger;
 using Sacco.Shared.Tenancy;
@@ -10,7 +11,7 @@ using Sacco.Shared.Time;
 namespace Sacco.Modules.Ledger.Application;
 
 /// <summary>Implementation of the Ledger module's public contract for other modules.</summary>
-public sealed class LedgerService(LedgerDbContext db, PostingEngine engine, LedgerQueries queries, ITenantContext tenant, IClock clock, ILogger<LedgerService> logger) : ILedgerService
+public sealed class LedgerService(LedgerDbContext db, PostingEngine engine, LedgerQueries queries, ITenantContext tenant, ICurrentUser currentUser, IClock clock, ILogger<LedgerService> logger) : ILedgerService
 {
     public async Task<PostingResult> PostAsync(PostingRequest request, CancellationToken ct)
     {
@@ -20,7 +21,7 @@ public sealed class LedgerService(LedgerDbContext db, PostingEngine engine, Ledg
 
         var drafts = await engine.ResolveLinesAsync(request.Lines, ct);
         var entry = JournalEntry.Create(Ids.New(), tenant.TenantId, request.Reference, request.Description, request.ValueDate,
-            request.Source, request.PostedByUserId, clock.UtcNow, drafts, JournalEntryStatus.Posted);
+            request.Source, request.PostedByUserId, clock.UtcNow, drafts, JournalEntryStatus.Posted, branchId: request.BranchId ?? currentUser.BranchId);
 
         var strategy = db.Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async () =>
@@ -119,6 +120,11 @@ public sealed class LedgerService(LedgerDbContext db, PostingEngine engine, Ledg
     public async Task<decimal> GetGlBalanceAsync(string glAccountCode, CancellationToken ct)
         => (await db.GlAccounts.AsNoTracking().FirstOrDefaultAsync(a => a.Code == glAccountCode, ct))?.Balance
            ?? throw new NotFoundException("GL account", glAccountCode);
+
+    public async Task<GlAccountSnapshot?> FindGlAccountAsync(string glAccountCode, CancellationToken ct)
+        => await db.GlAccounts.AsNoTracking().Where(a => a.Code == glAccountCode)
+            .Select(a => new GlAccountSnapshot(a.Code, a.Name, a.Category.ToString(), a.Segment, a.IsPostable, a.IsControlAccount, a.IsActive))
+            .FirstOrDefaultAsync(ct);
 
     public async Task PlaceHoldAsync(string accountNumber, decimal amount, string reason, CancellationToken ct)
     {

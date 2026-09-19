@@ -23,4 +23,6 @@ public sealed class HttpCurrentUser(IHttpContextAccessor accessor) : ICurrentUse
     public string? TenantSlug => Principal?.FindFirstValue("tenant");
 
     public Guid? MemberId => Guid.TryParse(Principal?.FindFirstValue("member_id"), out var id) ? id : null;
+
+    public Guid? BranchId => Guid.TryParse(Principal?.FindFirstValue("branch_id"), out var id) ? id : null;
 }

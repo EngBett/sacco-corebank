@@ -36,8 +36,28 @@ public static class IdentityModule
         services.AddScoped<IHubTicketIssuer, HubTicketIssuer>();
         services.AddScoped<MemberLoginService>();
         services.AddScoped<IMemberLoginProvisioner>(sp => sp.GetRequiredService<MemberLoginService>());
+        services.AddScoped<MemberOtpService>();
+        services.AddScoped<StaffAccountService>();
+        services.AddScoped<StaffInvitationService>();
+        services.AddScoped<StaffMfaService>();
+        var accountSettings = configuration.GetSection(StaffAccountSettings.SectionName).Get<StaffAccountSettings>() ?? new StaffAccountSettings();
+        services.AddSingleton(accountSettings);
+        services.AddOptions<StaffAccountSettings>()
+            .Validate(_ => !env.IsProduction() || (Uri.TryCreate(accountSettings.PublicOrigin, UriKind.Absolute, out var origin) && origin.Scheme == "https"
+                && Uri.TryCreate(accountSettings.PortalUrl, UriKind.Absolute, out Uri? portal)),
+                "Identity:Accounts:PublicOrigin (https) and Identity:Accounts:PortalUrl must be set in Production — they go into activation and reset emails.")
+            .ValidateOnStart();
+        var mfa = configuration.GetSection(Application.Mfa.MfaSettings.SectionName).Get<Application.Mfa.MfaSettings>() ?? new Application.Mfa.MfaSettings();
+        services.AddSingleton(mfa);
+        services.AddSingleton<Application.Mfa.TotpSecretProtector>();
+        // Production must hold its own MFA encryption key, never the development one from appsettings.Development.json.
+        services.AddOptions<Application.Mfa.MfaSettings>()
+            .Validate(_ => !env.IsProduction() || (mfa.ActiveKeyId is { } active && active != Application.Mfa.MfaSettings.DevelopmentKeyId && mfa.EncryptionKeys.ContainsKey(active)),
+                "Identity:Mfa:ActiveKeyId must name a non-development key in Identity:Mfa:EncryptionKeys in Production.")
+            .ValidateOnStart();
         services.AddSingleton<IModuleEndpoints, IdentityAdminEndpoints>();
         services.AddSingleton<IModuleEndpoints, AccountEndpoints>();
+        services.AddSingleton<IModuleEndpoints, MemberAuthEndpoints>();
 
         var settings = configuration.GetSection(IdentityServerSettings.SectionName).Get<IdentityServerSettings>() ?? new IdentityServerSettings();
         services.AddSingleton(settings);

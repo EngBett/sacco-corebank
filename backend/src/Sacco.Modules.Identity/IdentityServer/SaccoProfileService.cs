@@ -33,6 +33,9 @@ public sealed class SaccoProfileService(UserService users, MemberLoginService me
             new("email", user.Email),
             new(IdentityServerConfig.TenantClaim, context.Subject.FindFirst(IdentityServerConfig.TenantClaim)?.Value ?? string.Empty),
         };
+        // The office the user works at, read from the user record rather than the subject, so moving someone takes effect
+        // at their next token. It stamps their postings and audit entries (ADR 0018) and is never an authorization claim.
+        if (user.BranchId is { } branchId) claims.Add(new Claim(SubjectClaims.BranchIdClaim, branchId.ToString()));
         claims.AddRange(user.RoleNames.Select(r => new Claim("role", r)));
         context.IssuedClaims.AddRange(claims);
     }

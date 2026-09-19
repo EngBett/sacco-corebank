@@ -8,7 +8,7 @@ using Sacco.Shared.Domain;
 namespace Sacco.Seed.Seeders;
 
 /// <summary>
-/// Demo SACCO chart of accounts. Every account is explicitly FOSA or BOSA (ADR 0002). Other
+/// Icodeio SACCO chart of accounts. Every account is explicitly FOSA or BOSA (ADR 0002). Other
 /// seeders and modules reference accounts by the constants below, never by literal codes.
 /// </summary>
 public static class Coa

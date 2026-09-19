@@ -22,7 +22,7 @@ workflow, or an integration, and there is no seed data exercising it, the work i
 CLI command, idempotent (safe to re-run against a fresh database).
 
 ## Demo tenant
-All seed data belongs to a single demo tenant, "Demo SACCO", so the whole platform can be
+All seed data belongs to a single demo tenant, "Icodeio SACCO", so the whole platform can be
 demoed coherently in one login, one branding theme, one dataset.
 
 ## Roles covered

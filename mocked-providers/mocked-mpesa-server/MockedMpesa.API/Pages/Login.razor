@@ -1,0 +1,149 @@
+@page "/login"
+@attribute [AllowAnonymous]
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Options
+@using MockedMpesa.API.Configuration
+@inject IOptions<MpesaCredentialsOptions> CredentialsOptions
+@inject NavigationManager Navigation
+@inject IHttpContextAccessor HttpContextAccessor
+
+<PageTitle>Mock M-Pesa Login</PageTitle>
+
+<div class="container-fluid d-flex align-items-center justify-content-center min-vh-100" data-bs-theme="dark">
+    <div class="card shadow-lg" style="width: 28rem; background-color: #2d3748;">
+        <div class="card-body p-5">
+            <div class="text-center mb-4">
+                <i class="bi bi-currency-exchange" style="font-size: 3rem; color: #10b981;"></i>
+                <h2 class="card-title mt-3 text-white">Mock M-Pesa</h2>
+                <p class="text-muted">Admin Panel Login</p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> @errorMessage
+                </div>
+            }
+
+            <EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+                <DataAnnotationsValidator />
+                
+                <div class="mb-3">
+                    <label for="username" class="form-label text-white">
+                        <i class="bi bi-person-fill"></i> Username (Consumer Key)
+                    </label>
+                    <InputText id="username" 
+                               @bind-Value="loginModel.Username" 
+                               class="form-control form-control-lg" 
+                               placeholder="Enter consumer key"
+                               autocomplete="username" />
+                    <ValidationMessage For="() => loginModel.Username" />
+                </div>
+
+                <div class="mb-4">
+                    <label for="password" class="form-label text-white">
+                        <i class="bi bi-lock-fill"></i> Password (Consumer Secret)
+                    </label>
+                    <InputText id="password" 
+                               type="password" 
+                               @bind-Value="loginModel.Password" 
+                               class="form-control form-control-lg" 
+                               placeholder="Enter consumer secret"
+                               autocomplete="current-password" />
+                    <ValidationMessage For="() => loginModel.Password" />
+                </div>
+
+                <button type="submit" class="btn btn-success btn-lg w-100" disabled="@isLoading">
+                    @if (isLoading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>Logging in...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                        <span>Login</span>
+                    }
+                </button>
+            </EditForm>
+
+            <div class="text-center mt-4">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Use your M-Pesa API credentials
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginModel loginModel = new();
+    private string? errorMessage;
+    private bool isLoading;
+
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    private string? ReturnUrl { get; set; }
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var credentials = CredentialsOptions.Value;
+
+            // Validate credentials
+            if (loginModel.Username == credentials.ConsumerKey && 
+                loginModel.Password == credentials.ConsumerSecret)
+            {
+                // Create claims for the authenticated user
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, loginModel.Username),
+                    new Claim(ClaimTypes.Role, "Admin"),
+                    new Claim("ConsumerKey", credentials.ConsumerKey)
+                };
+
+                var claimsIdentity = new ClaimsIdentity(claims, "MpesaAuth");
+                var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+
+                // Sign in the user
+                var httpContext = HttpContextAccessor.HttpContext;
+                if (httpContext != null)
+                {
+                    await httpContext.SignInAsync("MpesaAuth", claimsPrincipal);
+                    
+                    // Redirect to return URL or default to transactions page
+                    var redirectUrl = !string.IsNullOrEmpty(ReturnUrl) ? ReturnUrl : "/transactions";
+                    Navigation.NavigateTo(redirectUrl, forceLoad: true);
+                }
+            }
+            else
+            {
+                errorMessage = "Invalid username or password. Please check your M-Pesa credentials.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred during login: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private class LoginModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Username is required")]
+        public string Username { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Password is required")]
+        public string Password { get; set; } = string.Empty;
+    }
+}

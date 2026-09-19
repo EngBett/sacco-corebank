@@ -40,6 +40,7 @@ builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
+builder.Services.AddScoped<Sacco.Shared.Audit.IAuditContext, HttpAuditContext>();
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
@@ -72,6 +73,15 @@ builder.Services.AddRateLimiter(o =>
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     // Public, unauthenticated surface (membership applications): tight per-IP window.
     o.AddFixedWindowLimiter("public", w => { w.PermitLimit = 10; w.Window = TimeSpan.FromMinutes(1); w.QueueLimit = 0; });
+    // The public website's read-only catalogue (products, services): per IP, generous — Next.js caches these server-side.
+    o.AddPolicy(Sacco.Modules.Platform.Endpoints.PlatformEndpoints.PublicReadRateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
+        http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    // Sign-in, two-step codes, activation and password reset (ADR 0016): per client IP, on top of per-account lockout.
+    var accountPermits = builder.Configuration.GetValue("RateLimiting:AccountPermitsPerMinute", 20);
+    o.AddPolicy(Sacco.Modules.Identity.Endpoints.AccountEndpoints.RateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
+        http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = accountPermits, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 
 // ---- Authentication: bearer tokens validated against the in-process Open.IdentityServer (ADR 0005) ----
@@ -105,6 +115,11 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+// Public tenant assets (wwwroot/tenant-assets/{slug}/logo.png): a tenant's branding LogoUrl may be a root-relative path on this origin.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "public, max-age=3600",
+});
 
 if (app.Configuration.GetValue("Database:MigrateOnStartup", false) && !PaymentsModule.IsGeneratingOpenApiDocument)
 {

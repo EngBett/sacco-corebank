@@ -16,12 +16,12 @@ namespace Sacco.Modules.Ledger.Application;
 /// adjustment and therefore never takes effect on the initiator's say-so alone
 /// (non-negotiable #6). Every decision is audit-logged.
 /// </summary>
-public sealed class JournalWorkflow(LedgerDbContext db, PostingEngine engine, ITenantContext tenant, IClock clock, IAuditLogger audit, INotifier notifier)
+public sealed class JournalWorkflow(LedgerDbContext db, PostingEngine engine, ITenantContext tenant, ICurrentUser currentUser, IClock clock, IAuditLogger audit, INotifier notifier)
 {
     public async Task<JournalEntry> CreatePendingAsync(string reference, string description, DateOnly valueDate, IReadOnlyList<PostingLine> lines, Guid initiatedBy, CancellationToken ct)
     {
         var drafts = await engine.ResolveLinesAsync(lines, ct);
-        var entry = JournalEntry.Create(Ids.New(), tenant.TenantId, reference, description, valueDate, "Manual", initiatedBy, clock.UtcNow, drafts, JournalEntryStatus.PendingApproval);
+        var entry = JournalEntry.Create(Ids.New(), tenant.TenantId, reference, description, valueDate, "Manual", initiatedBy, clock.UtcNow, drafts, JournalEntryStatus.PendingApproval, branchId: currentUser.BranchId);
         db.JournalEntries.Add(entry);
         try
         {
@@ -97,7 +97,7 @@ public sealed class JournalWorkflow(LedgerDbContext db, PostingEngine engine, IT
             l.Direction == EntryDirection.Debit ? EntryDirection.Credit : EntryDirection.Debit, l.Amount, $"Reversal: {l.Narrative}")).ToList();
 
         var reversal = JournalEntry.Create(Ids.New(), tenant.TenantId, $"REV:{original.Reference}", $"Reversal of {original.Reference}: {reason.Trim()}",
-            clock.Today, "Reversal", initiatedBy, clock.UtcNow, drafts, JournalEntryStatus.PendingApproval, original.Id);
+            clock.Today, "Reversal", initiatedBy, clock.UtcNow, drafts, JournalEntryStatus.PendingApproval, original.Id, original.BranchId);
         db.JournalEntries.Add(reversal);
         try
         {

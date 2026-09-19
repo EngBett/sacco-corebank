@@ -16,7 +16,7 @@ using Sacco.Shared.Time;
 
 namespace Sacco.Modules.Members.Application;
 
-public sealed class MemberService(MembersDbContext db, ITenantContext tenant, IClock clock, IAuditLogger audit, INotifier notifier, ILendingService lending, ISavingsService savings, IMemberLoginProvisioner logins)
+public sealed class MemberService(MembersDbContext db, ITenantContext tenant, ICurrentUser currentUser, IBranchDirectory branches, IClock clock, IAuditLogger audit, INotifier notifier, ILendingService lending, ISavingsService savings, IMemberLoginProvisioner logins)
 {
     private static readonly System.Text.Json.JsonSerializerOptions Json = new(System.Text.Json.JsonSerializerDefaults.Web);
 
@@ -110,11 +110,14 @@ public sealed class MemberService(MembersDbContext db, ITenantContext tenant, IC
     }
 
     /// <param name="joinedAt">Historical join date for migrated/seeded members; defaults to today.</param>
-    public async Task<Member> RegisterAsync(Guid? id, string? memberNumber, PersonalDetails details, NextOfKin kin, MemberSource source, Guid? applicationId, Guid registeredBy, CancellationToken ct, DateOnly? joinedAt = null)
+    public async Task<Member> RegisterAsync(Guid? id, string? memberNumber, PersonalDetails details, NextOfKin kin, MemberSource source, Guid? applicationId, Guid registeredBy, CancellationToken ct, DateOnly? joinedAt = null, Guid? branchId = null)
     {
         await EnsureNoDuplicateAsync(details.NationalIdNumber, details.PhoneNumber, ct);
         memberNumber ??= await NextMemberNumberAsync(ct);
-        var member = Member.Register(id ?? Ids.New(), tenant.TenantId, memberNumber, details, kin, source, applicationId, registeredBy, clock.Today, clock.UtcNow, joinedAt);
+        // Falls back to the registering officer's branch, then the head office, so every member has a home office.
+        branchId ??= currentUser.BranchId ?? (await branches.DefaultAsync(ct))?.Id;
+        if (branchId is { } branch) await branches.EnsureExistsAsync(branch, ct);
+        var member = Member.Register(id ?? Ids.New(), tenant.TenantId, memberNumber, details, kin, source, applicationId, registeredBy, clock.Today, clock.UtcNow, joinedAt, branchId);
         db.Members.Add(member);
         await db.SaveChangesAsync(ct);
         await audit.RecordAsync(new AuditEvent("members.registered", nameof(Member), member.Id.ToString(), registeredBy, $$"""{"memberNumber":"{{member.MemberNumber}}","source":"{{source}}"}"""), ct);
@@ -125,6 +128,17 @@ public sealed class MemberService(MembersDbContext db, ITenantContext tenant, IC
 
     public async Task<Member> GetAsync(Guid id, CancellationToken ct)
         => await db.Members.FirstOrDefaultAsync(m => m.Id == id, ct) ?? throw new NotFoundException("Member", id);
+
+    /// <summary>Moves a member to another office; the branch is checked against this tenant's registry.</summary>
+    public async Task<Member> SetBranchAsync(Guid memberId, Guid? branchId, Guid byUser, CancellationToken ct)
+    {
+        var member = await db.Members.FirstOrDefaultAsync(m => m.Id == memberId, ct) ?? throw new NotFoundException("Member", memberId);
+        if (branchId is { } branch) await branches.EnsureExistsAsync(branch, ct);
+        member.SetBranch(branchId);
+        await db.SaveChangesAsync(ct);
+        await audit.RecordAsync(new AuditEvent("members.branch_changed", nameof(Member), memberId.ToString(), byUser, $$"""{"branchId":"{{branchId}}"}"""), ct);
+        return member;
+    }
 
     public async Task<Member> UpdateAsync(Guid id, PersonalDetails details, NextOfKin kin, Guid byUser, CancellationToken ct)
     {

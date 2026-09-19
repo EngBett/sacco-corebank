@@ -43,7 +43,9 @@ public sealed record PostingRequest(
     DateOnly ValueDate,
     string Source,             // originating module/channel, e.g. "Savings", "MPesa", "Seed"
     Guid PostedByUserId,
-    IReadOnlyList<PostingLine> Lines);
+    IReadOnlyList<PostingLine> Lines,
+    /// <summary>Office the posting belongs to (ADR 0018). Null falls back to the acting user's branch.</summary>
+    Guid? BranchId = null);
 
 public sealed record PostingResult(Guid JournalEntryId, string Reference, decimal TotalAmount);
 
@@ -70,6 +72,8 @@ public sealed record LedgerAccountSnapshot(
     decimal AvailableBalance,
     DateTimeOffset OpenedAt);
 
+public sealed record GlAccountSnapshot(string Code, string Name, string Category, Segment Segment, bool IsPostable, bool IsControlAccount, bool IsActive);
+
 public sealed record StatementLineSnapshot(DateOnly ValueDate, string Reference, string Description, string? Narrative, EntryDirection Direction, decimal Amount, decimal RunningBalance);
 public sealed record AccountStatementSnapshot(string AccountNumber, decimal OpeningBalance, decimal ClosingBalance, IReadOnlyList<StatementLineSnapshot> Lines);
 
@@ -92,6 +96,7 @@ public interface ILedgerService
     Task<AccountStatementSnapshot?> GetStatementAsync(string accountNumber, DateOnly from, DateOnly to, CancellationToken ct);
     /// <summary>Running balance of a GL account, signed toward its normal side.</summary>
     Task<decimal> GetGlBalanceAsync(string glAccountCode, CancellationToken ct);
+    Task<GlAccountSnapshot?> FindGlAccountAsync(string glAccountCode, CancellationToken ct);
     /// <summary>Trial balance computed from posted lines (not running balances) as of a value date.</summary>
     Task<TrialBalanceSnapshot> GetTrialBalanceAsync(Segment? segment, DateOnly asOf, CancellationToken ct);
     /// <summary>Debit/credit activity per postable GL account over a value-date range.</summary>

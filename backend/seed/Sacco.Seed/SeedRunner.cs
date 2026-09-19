@@ -144,6 +144,8 @@ public static class SeedRunner
 /// <summary>The seeder only ever targets the demo tenant.</summary>
 file sealed class SeedTenantLookup : ITenantLookup
 {
-    public Task<(Guid Id, string Slug, string Name, string PrimaryColor)?> FindBySlugAsync(string slug, CancellationToken ct)
-        => Task.FromResult<(Guid, string, string, string)?>(slug == Data.DemoTenant.Slug ? (Data.DemoTenant.Id, Data.DemoTenant.Slug, Data.DemoTenant.Name, "#0f766e") : null);
+    public Task<(Guid Id, string Slug, string Name, string PrimaryColor, string? LogoUrl, string? FaviconUrl)?> FindBySlugAsync(string slug, CancellationToken ct)
+        => Task.FromResult<(Guid, string, string, string, string?, string?)?>(slug == Data.DemoTenant.Slug
+            ? (Data.DemoTenant.Id, Data.DemoTenant.Slug, Data.DemoTenant.Name, Data.DemoTenant.PrimaryColor, Data.DemoTenant.LogoUrl, Data.DemoTenant.FaviconUrl)
+            : null);
 }

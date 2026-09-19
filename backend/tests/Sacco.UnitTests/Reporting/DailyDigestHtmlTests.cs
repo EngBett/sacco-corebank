@@ -22,13 +22,13 @@ public class DailyDigestHtmlTests
     [Fact]
     public void Renders_tenant_branding_and_key_figures()
     {
-        var branding = new TenantBrandingInfo("Demo SACCO Society Ltd", "Demo SACCO", "#0f766e", "#f59e0b", "https://cdn.example/logo.png", "support@demosacco.example.co.ke");
+        var branding = new TenantBrandingInfo("Icodeio SACCO Society Ltd", "Icodeio SACCO", "#0f766e", "#f59e0b", "https://cdn.example/logo.png", "support@icodeio.example.co.ke");
         var html = DailyDigestHtml.Build(branding, AsOf, Position(4_688_067.93m, 4_688_067.93m), Capital(), Liquidity(true), Portfolio());
 
-        html.ShouldContain("Demo SACCO Society Ltd");
+        html.ShouldContain("Icodeio SACCO Society Ltd");
         html.ShouldContain("https://cdn.example/logo.png");
         html.ShouldContain("#0f766e");
-        html.ShouldContain("support@demosacco.example.co.ke");
+        html.ShouldContain("support@icodeio.example.co.ke");
         html.ShouldContain("KES 4,688,067.93");
         html.ShouldContain("KES 253,522.33"); // non-performing outstanding
         html.ShouldContain("61.44%"); // core capital / total assets
@@ -39,7 +39,7 @@ public class DailyDigestHtmlTests
     [Fact]
     public void A_breached_ratio_gets_the_non_compliant_pill_and_a_generic_mark_stands_in_for_a_missing_logo()
     {
-        var branding = new TenantBrandingInfo("Demo SACCO Society Ltd", "Demo", "#0f766e", "#f59e0b", null, "");
+        var branding = new TenantBrandingInfo("Icodeio SACCO Society Ltd", "Demo", "#0f766e", "#f59e0b", null, "");
         var html = DailyDigestHtml.Build(branding, AsOf, Position(100, 100), Capital(), Liquidity(false), Portfolio());
 
         html.ShouldContain("Needs attention");

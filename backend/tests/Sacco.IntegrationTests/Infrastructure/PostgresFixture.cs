@@ -5,13 +5,17 @@ using Testcontainers.PostgreSql;
 namespace Sacco.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// One real Postgres per test run (Testcontainers), migrated and seeded with the Demo SACCO
+/// One real Postgres per test run (Testcontainers), migrated and seeded with the Icodeio SACCO
 /// exactly as a reviewer would do locally. Set SACCO_TEST_CONNECTION to reuse an existing server.
 /// </summary>
 public sealed class PostgresFixture : IAsyncLifetime
 {
     private PostgreSqlContainer? _container;
     public string ConnectionString { get; private set; } = string.Empty;
+
+    /// <summary>The owning superuser connection — what a database administrator holds. Tests use it to prove that a
+    /// guard the application can't lift (the append-only trigger) still leaves tampering detectable.</summary>
+    public string AdminConnectionString { get; private set; } = string.Empty;
 
     public async ValueTask InitializeAsync()
     {
@@ -29,6 +33,7 @@ public sealed class PostgresFixture : IAsyncLifetime
 
         using var lf = LoggerFactory.Create(b => b.SetMinimumLevel(LogLevel.Warning));
         await SeedRunner.RunAsync(ConnectionString, reset: false, lf);
+        AdminConnectionString = ConnectionString;
         ConnectionString = await CreateAppRoleAsync(ConnectionString);
     }
 

@@ -9,5 +9,6 @@
     <PackageReference Include="Open.IdentityServer" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
+    <PackageReference Include="QRCoder" />
   </ItemGroup>
 </Project>

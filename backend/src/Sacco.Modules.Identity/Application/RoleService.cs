@@ -23,11 +23,14 @@ public sealed class RoleService(IdentityDbContext db, ITenantContext tenant, IAu
     public async Task<Role> UpdateAsync(Guid roleId, string name, string description, IReadOnlyList<string> perms, Guid byUser, CancellationToken ct)
     {
         var role = await db.Roles.FirstOrDefaultAsync(r => r.Id == roleId, ct) ?? throw new NotFoundException("Role", roleId);
+        var before = role.Permissions.Select(p => p.Permission).ToList();
+        var previousName = role.Name;
         role.Rename(name, description);
         db.AddRange(role.SetPermissions(perms));
         await db.SaveChangesAsync(ct);
         await permissions.InvalidateRoleMembersAsync(tenant.TenantId, roleId, ct);
-        await audit.RecordAsync(new AuditEvent("identity.role.updated", nameof(Role), role.Id.ToString(), byUser, $$"""{"name":"{{role.Name}}","permissions":{{perms.Count}}}"""), ct);
+        await audit.RecordAsync(new AuditEvent("identity.role.updated", nameof(Role), role.Id.ToString(), byUser,
+            AuditDetails.New().With("name", role.Name).Changed("roleName", previousName, role.Name).Diff("permissions", before, perms).ToJson()), ct);
         return role;
     }
 

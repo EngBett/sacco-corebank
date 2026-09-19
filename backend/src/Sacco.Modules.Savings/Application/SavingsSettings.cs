@@ -23,6 +23,8 @@ public sealed class SavingsSettings
     public string InterestPayableGl { get; set; } = "2300";       // BOSA
     public string WithholdingTaxPayableGl { get; set; } = "2700"; // BOSA
     public int DividendWithholdingTaxBps { get; set; } = 500;     // 5% WHT on dividends/interest (KRA)
+    /// <summary>How long a paid balance enquiry keeps a fee-gated balance visible in self-service (ADR 0015).</summary>
+    public int BalanceRevealMinutes { get; set; } = 5;
 
     public (string Gl, Segment Segment) SettlementFor(DepositChannel channel) => channel switch
     {
@@ -52,16 +54,20 @@ public static class PostingBuilder
         return lines;
     }
 
-    /// <summary>Money goes OUT from the member account via <paramref name="settlementGl"/>, optionally with a fee credited to <paramref name="feeGl"/> (same segment as the account).</summary>
-    public static List<PostingLine> Outflow(SavingsSettings s, string settlementGl, Segment settlementSegment, string controlGl, string accountNumber, Segment accountSegment, decimal amount, decimal fee, string? feeGl, string narrative)
+    /// <summary>Money goes OUT from the member account via <paramref name="settlementGl"/>, optionally with a fee credited to <paramref name="feeGl"/> in <paramref name="feeSegment"/> (bridged when it differs from the account's).</summary>
+    public static List<PostingLine> Outflow(SavingsSettings s, string settlementGl, Segment settlementSegment, string controlGl, string accountNumber, Segment accountSegment, decimal amount, decimal fee, string? feeGl, Segment feeSegment, string narrative)
     {
         var lines = new List<PostingLine> { new(controlGl, accountSegment, EntryDirection.Debit, amount + fee, accountNumber, narrative) };
-        if (fee > 0) lines.Add(new PostingLine(feeGl!, accountSegment, EntryDirection.Credit, fee, Narrative: "Withdrawal fee"));
+        if (fee > 0) lines.AddRange(Fee(s, accountSegment, fee, feeGl!, feeSegment, "Withdrawal fee"));
         if (settlementSegment != accountSegment)
             lines.AddRange(Bridge(s, accountSegment, settlementSegment, amount, narrative));
         lines.Add(new PostingLine(settlementGl, settlementSegment, EntryDirection.Credit, amount, Narrative: narrative));
         return lines;
     }
+
+    /// <summary>Crediting a fee taken from a member account in <paramref name="accountSegment"/> to an income GL, bridging segments when needed. The member-account debit is the caller's.</summary>
+    public static IEnumerable<PostingLine> Fee(SavingsSettings s, Segment accountSegment, decimal fee, string feeGl, Segment feeSegment, string narrative)
+        => Bridge(s, accountSegment, feeSegment, fee, narrative).Append(new PostingLine(feeGl, feeSegment, EntryDirection.Credit, fee, Narrative: narrative));
 
     /// <summary>Clearing lines moving <paramref name="amount"/> of value from one segment to the other.</summary>
     public static IEnumerable<PostingLine> Bridge(SavingsSettings s, Segment from, Segment to, decimal amount, string narrative)

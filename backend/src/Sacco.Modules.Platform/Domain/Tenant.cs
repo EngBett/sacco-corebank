@@ -49,6 +49,11 @@ public class TenantBranding
     public string SecondaryColor { get; set; } = "#f59e0b";
     public string AccentColor { get; set; } = "#1d4ed8";
     public string? LogoUrl { get; set; }
+    /// <summary>Browser tab icon (.ico/.png/.svg); like <see cref="LogoUrl"/>, absolute or root-relative to the API origin.</summary>
+    public string? FaviconUrl { get; set; }
+    /// <summary>Optional logo variants for a site that switches between light and dark mode (the public site). Each falls back to <see cref="LogoUrl"/>.</summary>
+    public string? LightModeLogoUrl { get; set; }
+    public string? DarkModeLogoUrl { get; set; }
     public string Tagline { get; set; } = string.Empty;
     public string SupportEmail { get; set; } = string.Empty;
     public string SupportPhone { get; set; } = string.Empty;

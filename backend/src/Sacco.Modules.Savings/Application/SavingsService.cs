@@ -14,7 +14,7 @@ using Sacco.Shared.Time;
 
 namespace Sacco.Modules.Savings.Application;
 
-public sealed class SavingsService(SavingsDbContext db, ILedgerService ledger, IMemberDirectory members, ITenantContext tenant, IClock clock, IAuditLogger audit, IOptions<SavingsSettings> options, INotifier notifier) : ISavingsService
+public sealed class SavingsService(SavingsDbContext db, ILedgerService ledger, IMemberDirectory members, ITenantContext tenant, IClock clock, IAuditLogger audit, IOptions<SavingsSettings> options, INotifier notifier, FeeMatrixService fees) : ISavingsService
 {
     private SavingsSettings Settings => options.Value;
 
@@ -117,10 +117,26 @@ public sealed class SavingsService(SavingsDbContext db, ILedgerService ledger, I
         var (settlementGl, settlementSegment) = Settings.SettlementFor(cmd.Channel);
         var narrative = cmd.Narrative ?? $"{cmd.Channel} deposit";
         var lines = PostingBuilder.Inflow(Settings, settlementGl, settlementSegment, product.ControlGlAccountCode, account.AccountNumber, account.Segment, cmd.Amount, narrative);
+
+        // Deposit fee (fee matrix, ADR 0015): the full amount lands, then the fee comes off in the same journal, so the
+        // statement shows both. Internal transfers (loan disbursements, dividends) are never charged.
+        var fee = FeeMatrixService.ChannelFor(cmd.Channel) is { } feeChannel
+            ? await fees.QuoteAsync(FeeTransactionType.Deposit, feeChannel, product, cmd.Amount, ct)
+            : FeeCharge.None(account.Segment);
+        if (fee.Amount >= cmd.Amount)
+            throw new DomainRuleException("savings.fees.exceeds_deposit", $"The deposit fee ({fee.Amount:N2}) would consume the whole deposit.");
+        if (fee.Amount > 0)
+        {
+            lines.Add(new PostingLine(product.ControlGlAccountCode, account.Segment, EntryDirection.Debit, fee.Amount, account.AccountNumber, "Deposit fee"));
+            lines.AddRange(PostingBuilder.Fee(Settings, account.Segment, fee.Amount, fee.GlAccountCode!, fee.Segment, "Deposit fee"));
+        }
+
         var reference = $"DEP:{cmd.Reference}";
         var posted = await ledger.PostAsync(new PostingRequest(reference, $"{narrative} — {account.AccountNumber}", clock.Today, "Savings", cmd.ByUserId, lines), ct);
         var snapshot = await ledger.FindAccountAsync(account.AccountNumber, ct);
-        return new DepositResult(posted.JournalEntryId, cmd.Reference, account.AccountNumber, cmd.Amount, snapshot!.Balance);
+        await audit.RecordAsync(new AuditEvent("savings.deposit", nameof(SavingsAccount), account.AccountNumber, cmd.ByUserId,
+            AuditDetails.New().With("amount", cmd.Amount).With("channel", cmd.Channel.ToString()).With("reference", cmd.Reference).With("fee", fee.Amount).With("journal", posted.JournalEntryId).ToJson()), ct);
+        return new DepositResult(posted.JournalEntryId, cmd.Reference, account.AccountNumber, cmd.Amount, snapshot!.Balance, fee.Amount);
     }
 
     // ---------- Withdrawals ----------
@@ -129,7 +145,10 @@ public sealed class SavingsService(SavingsDbContext db, ILedgerService ledger, I
     {
         var account = await GetAccountAsync(accountNumber, ct);
         var product = await db.Products.FirstAsync(p => p.Id == account.ProductId, ct);
-        var request = WithdrawalRequest.Create(Ids.New(), tenant.TenantId, account, product, amount, channel, destination, narrative, byUser, clock.UtcNow, clock.Today);
+        if (product.Kind == ProductKind.Shares)
+            throw new DomainRuleException("savings.shares.no_direct_withdrawal", "Share capital cannot be withdrawn directly — transfer or sell the shares to another member instead.");
+        var fee = await fees.QuoteAsync(FeeTransactionType.Withdrawal, FeeMatrixService.ChannelFor(channel), product, amount, ct);
+        var request = WithdrawalRequest.Create(Ids.New(), tenant.TenantId, account, product, amount, fee, channel, destination, narrative, byUser, clock.UtcNow, clock.Today);
 
         var snapshot = await ledger.FindAccountAsync(accountNumber, ct) ?? throw new NotFoundException("Ledger account", accountNumber);
         if (snapshot.AvailableBalance - request.TotalDebit < product.MinimumBalance)
@@ -219,7 +238,7 @@ public sealed class SavingsService(SavingsDbContext db, ILedgerService ledger, I
             _ => throw new DomainRuleException("savings.channel_unsupported", $"Channel {request.Channel} is not supported."),
         };
         var narrative = request.Narrative ?? $"{request.Channel} withdrawal";
-        var lines = PostingBuilder.Outflow(Settings, settlementGl, settlementSegment, product.ControlGlAccountCode, account.AccountNumber, account.Segment, request.Amount, request.Fee, product.FeeIncomeGlAccountCode, narrative);
+        var lines = PostingBuilder.Outflow(Settings, settlementGl, settlementSegment, product.ControlGlAccountCode, account.AccountNumber, account.Segment, request.Amount, request.Fee, request.FeeGlAccountCode ?? product.FeeIncomeGlAccountCode, request.FeeSegment ?? account.Segment, narrative);
         var reference = $"WDR:{request.Id:N}";
         await ledger.PostAsync(new PostingRequest(reference, $"{narrative} — {account.AccountNumber}", clock.Today, "Savings", byUser, lines), ct);
         request.MarkPaid(byUser, reference, clock.UtcNow, clock.Today);
@@ -286,7 +305,7 @@ public sealed class SavingsService(SavingsDbContext db, ILedgerService ledger, I
             {
                 var product = products[account.ProductId];
                 reference = $"EXIT:{account.AccountNumber}";
-                var lines = PostingBuilder.Outflow(Settings, settlementGl, settlementSegment, product.ControlGlAccountCode, account.AccountNumber, account.Segment, balance, 0m, null, $"Exit payout {account.AccountNumber}");
+                var lines = PostingBuilder.Outflow(Settings, settlementGl, settlementSegment, product.ControlGlAccountCode, account.AccountNumber, account.Segment, balance, 0m, null, account.Segment, $"Exit payout {account.AccountNumber}");
                 await ledger.PostAsync(new PostingRequest(reference, $"Member exit payout — {account.AccountNumber}", clock.Today, "Savings", byUserId, lines), ct);
             }
             if (snapshot is not null && snapshot.Status != LedgerAccountStatus.Closed)

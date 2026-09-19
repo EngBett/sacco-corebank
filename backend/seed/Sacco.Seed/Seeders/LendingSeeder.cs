@@ -159,14 +159,32 @@ public sealed class LendingSeeder(LendingDbContext db, LoanService loans, Repaym
                 d.Item11, d.Item12, d.Item13, d.Item14, d.Item15, d.Item16, d.Item17, d.Item18, d.Item19, d.Item20, d.Item21, d.Item22, d.Item23, d.Item24));
             created++;
         }
+        foreach (var d in PublicCatalogue.NewLoans)
+        {
+            if (existing.Contains(d.Code)) continue;
+            var (gl, ii, ir, fee, prov, provExp) = d.Segment == Segment.Fosa
+                ? (Coa.FosaLoansControl, Coa.FosaLoanInterestIncome, Coa.FosaInterestReceivable, Coa.FosaFeesAndCharges, Coa.FosaLoanLossProvision, Coa.FosaProvisionExpense)
+                : (Coa.BosaLoansControl, Coa.BosaLoanInterestIncome, Coa.BosaInterestReceivable, Coa.BosaLoanFees, Coa.BosaLoanLossProvision, Coa.BosaProvisionExpense);
+            var product = LoanProduct.Create(Ids.Deterministic($"loanproduct:{DemoTenant.Slug}:{d.Code}"), DemoTenant.Id, d.Code, d.Name, d.Description, d.Segment, gl, ii, ir, fee, prov, provExp,
+                d.RateBps, d.Method, d.MinAmount, d.MaxAmount, d.MinTerm, d.MaxTerm, d.Multiplier, d.MembershipMonths, d.FeeBps, d.Guarantors, d.MinGuarantors, 100_000m, 2, d.Segment == Segment.Fosa ? 0 : 5);
+            product.SetListing(d.Category, d.Listing);
+            db.Products.Add(product);
+            created++;
+        }
         await db.SaveChangesAsync(ct);
         logger.Created("Loan products", created);
+
+        // Public-website listings for the original products: filled in where empty, never overwriting a SACCO's own text.
+        foreach (var product in await db.Products.ToListAsync(ct))
+            if (product.Listing.Features.Count == 0 && PublicCatalogue.ExistingLoans.TryGetValue(product.Code, out var entry))
+                product.SetListing(entry.Category, entry.Listing);
+        await db.SaveChangesAsync(ct);
     }
 
     private async Task SeedScorecardAsync(CancellationToken ct)
     {
         if (await db.Scorecards.AnyAsync(ct)) return;
-        await scoring.SetScorecardAsync(Scorecard.DefaultFactors, 70, 50, true, "Demo SACCO credit policy v1 — platform default weights; review with the credit committee", DemoTenant.Users.System, ct);
+        await scoring.SetScorecardAsync(Scorecard.DefaultFactors, 70, 50, true, "Icodeio SACCO credit policy v1 — platform default weights; review with the credit committee", DemoTenant.Users.System, ct);
         logger.Created("Credit scorecard", 1);
     }
 

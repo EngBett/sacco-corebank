@@ -8,6 +8,7 @@ using Sacco.Modules.Payments.Application;
 using Sacco.Modules.Payments.Domain;
 using Sacco.Modules.Payments.Persistence;
 using Sacco.Modules.Payments.Providers;
+using Sacco.Shared.Audit;
 using Sacco.Shared.Auth;
 using Sacco.Shared.Ledger;
 using Sacco.Shared.Members;
@@ -86,14 +87,21 @@ public sealed class PaymentEndpoints(IHostEnvironment env) : IModuleEndpoints
 
         // Provider callbacks. Tenant comes from the path (registered with the provider per SACCO); no bearer token —
         // authenticity is the provider implementation's job (signature/IP) and processing is idempotent.
-        app.MapPost("/api/payments/webhooks/{tenant}/{provider}", async (string tenant, string provider, HttpContext http, WebhookProcessor processor, WebhookSourceGuard guard, CancellationToken ct) =>
+        app.MapPost("/api/payments/webhooks/{tenant}/{provider}", async (string tenant, string provider, HttpContext http, WebhookProcessor processor, WebhookSourceGuard guard, IAuditLogger audit, CancellationToken ct) =>
         {
-            if (!guard.IsAllowed(http.Connection.RemoteIpAddress)) return Results.StatusCode(StatusCodes.Status403Forbidden);
+            if (!guard.IsAllowed(http.Connection.RemoteIpAddress))
+            {
+                await audit.RecordAsync(new AuditEvent("payments.webhook.blocked", "ProviderWebhook", provider, Guid.Empty,
+                    AuditDetails.New().With("tenant", tenant).ToJson(), Outcome: AuditOutcome.Denied), ct);
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
             using var reader = new StreamReader(http.Request.Body);
             var body = await reader.ReadToEndAsync(ct);
             var headers = http.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString(), StringComparer.OrdinalIgnoreCase);
             foreach (var q in http.Request.Query) headers[$"query:{q.Key}"] = q.Value.ToString(); // providers that cannot set headers put a shared secret in the callback URL
             var result = await processor.ProcessAsync(NormaliseProvider(provider), new WebhookPayload(body, headers, http.Connection.RemoteIpAddress?.ToString()), ct);
+            await audit.RecordAsync(new AuditEvent("payments.webhook.received", "ProviderWebhook", result.TransactionId?.ToString() ?? provider, Guid.Empty,
+                AuditDetails.New().With("provider", provider).With("message", result.Message).ToJson(), Outcome: result.Accepted ? AuditOutcome.Success : AuditOutcome.Failure), ct);
             return result.Accepted ? Results.Ok(new { result.Message, result.TransactionId }) : Results.BadRequest(new { result.Message });
         }).RequireRateLimiting("public").WithTags("Provider webhooks").WithName("ProviderWebhook");
 

@@ -11,7 +11,7 @@ namespace Sacco.Seed.Seeders;
 
 /// <summary>
 /// Opens member sub-ledger accounts and posts a realistic, balanced transaction history for the
-/// Demo SACCO: share purchases, monthly BOSA contributions, FOSA deposits/withdrawals, fees,
+/// Icodeio SACCO: share purchases, monthly BOSA contributions, FOSA deposits/withdrawals, fees,
 /// bank charges, teller cash banking, and an inter-segment transfer. Also leaves one manual
 /// journal pending approval so the maker-checker flow can be demoed. Idempotent by journal reference.
 /// </summary>

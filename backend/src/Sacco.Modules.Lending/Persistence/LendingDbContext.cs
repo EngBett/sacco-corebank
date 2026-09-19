@@ -28,6 +28,17 @@ public class LendingDbContext(DbContextOptions<LendingDbContext> options, ITenan
             b.HasKey(p => p.Id);
             b.Property(p => p.Code).HasMaxLength(30).IsRequired();
             b.HasIndex(p => new { p.TenantId, p.Code }).IsUnique();
+            b.Property(p => p.Category).HasConversion<int>();
+            b.OwnsOne(p => p.Listing, l =>
+            {
+                l.Property(x => x.ShowOnPublicSite).HasColumnName("listing_show_on_public_site");
+                l.Property(x => x.DisplayOrder).HasColumnName("listing_display_order");
+                l.Property(x => x.Features).HasColumnName("listing_features");
+                l.Property(x => x.Requirements).HasColumnName("listing_requirements");
+                l.Property(x => x.AmountNote).HasColumnName("listing_amount_note").HasMaxLength(200);
+                l.Property(x => x.ApplicationFormUrl).HasColumnName("listing_application_form_url").HasMaxLength(500);
+            });
+            b.Navigation(p => p.Listing).IsRequired();
             b.Property(p => p.Name).HasMaxLength(150).IsRequired();
             b.Property(p => p.Description).HasMaxLength(500);
             foreach (var gl in new[] { nameof(LoanProduct.ControlGlAccountCode), nameof(LoanProduct.InterestIncomeGlAccountCode), nameof(LoanProduct.InterestReceivableGlAccountCode), nameof(LoanProduct.FeeIncomeGlAccountCode), nameof(LoanProduct.ProvisionGlAccountCode), nameof(LoanProduct.ProvisionExpenseGlAccountCode) })

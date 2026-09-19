@@ -4,9 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Sacco.IntegrationTests.Infrastructure;
 using Sacco.Modules.Members.Endpoints;
+using Sacco.Modules.Savings.Domain;
 using Sacco.Modules.Savings.Endpoints;
 using Sacco.Seed.Data;
 using Sacco.Seed.Seeders;
+using Sacco.Shared.Auth;
 using Sacco.Shared.Lending;
 using Sacco.Shared.Tenancy;
 using Shouldly;
@@ -35,7 +37,7 @@ public sealed class SelfServiceTests(PostgresFixture pg) : IDisposable
         profile.MemberNumber.ShouldBe("M00001");
         profile.PhoneNumber.ShouldBe("254700100001");
 
-        var accounts = await (await me.GetAsync("/api/self/accounts")).ReadAs<List<SavingsAccountResponse>>();
+        var accounts = await (await me.GetAsync("/api/self/accounts")).ReadAs<List<MySavingsAccountResponse>>();
         accounts.ShouldNotBeEmpty();
         accounts.ShouldAllBe(a => a.MemberId == DemoTenant.MemberId("M00001"));
 
@@ -69,12 +71,61 @@ public sealed class SelfServiceTests(PostgresFixture pg) : IDisposable
         loan.Status.ShouldBe(LoanStatus.Applied);
         (await me.PostAsJsonAsync("/api/self/loans", new Sacco.Modules.Lending.Endpoints.SelfApplyLoanRequest("EMG-LOAN", 5_000m, 6, "again", BureauConsent: true), HttpExtensions.JsonOptions)).StatusCode.ShouldBe(HttpStatusCode.Conflict);
 
-        var accounts = await (await me.GetAsync("/api/self/accounts")).ReadAs<List<SavingsAccountResponse>>();
+        var accounts = await (await me.GetAsync("/api/self/accounts")).ReadAs<List<MySavingsAccountResponse>>();
         var fosa = accounts.First(a => a.Kind == Sacco.Shared.Savings.ProductKind.FosaCurrent);
         var tx = await me.PostAsJsonAsync("/api/self/payments/topup", new Sacco.Modules.Payments.Endpoints.SelfTopUpRequest("MPesa", 500m, fosa.AccountNumber, null), HttpExtensions.JsonOptions);
         tx.StatusCode.ShouldBe(HttpStatusCode.Created);
         var other = await me.PostAsJsonAsync("/api/self/payments/topup", new Sacco.Modules.Payments.Endpoints.SelfTopUpRequest("MPesa", 500m, "M00002-FO", null), HttpExtensions.JsonOptions);
         other.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Member_can_request_a_withdrawal_from_their_own_account_only_and_it_still_needs_a_staff_checker()
+    {
+        var me = await MemberClient("254700100003"); // M00003: verified, funded FOSA balance
+        var accounts = await (await me.GetAsync("/api/self/accounts")).ReadAs<List<MySavingsAccountResponse>>();
+        var fosa = accounts.First(a => a.Kind == Sacco.Shared.Savings.ProductKind.FosaCurrent);
+
+        var mine = await me.PostAsJsonAsync("/api/self/withdrawals", new SelfWithdrawalRequest(fosa.AccountNumber, 1_000m, PayoutChannel.MPesa, "254700100003", "Self-service test"), HttpExtensions.JsonOptions);
+        mine.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var withdrawal = await mine.ReadAs<WithdrawalResponse>();
+        withdrawal.Status.ShouldBe(WithdrawalStatus.PendingApproval, "a member cannot approve their own money movement — this still needs a staff checker");
+
+        var mySince = await (await me.GetAsync("/api/self/withdrawals")).ReadAs<List<WithdrawalResponse>>();
+        mySince.ShouldContain(w => w.Id == withdrawal.Id);
+
+        // Cannot request against another member's account — not found, never forbidden (RLS-style, not a permission leak).
+        var notMine = await me.PostAsJsonAsync("/api/self/withdrawals", new SelfWithdrawalRequest("M00002-FO", 1_000m, PayoutChannel.MPesa, "254700100003", "x"), HttpExtensions.JsonOptions);
+        notMine.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+
+        // A staff checker (never the member) approves it, exactly like a teller-initiated request.
+        var manager = _factory.ClientWithToken(await _factory.TokenFor("manager", IdentitySeeder.DemoPassword));
+        manager.DefaultRequestHeaders.Add("X-Tenant", DemoTenant.Slug);
+        var approved = await (await manager.PostAsync($"/api/savings/withdrawals/{withdrawal.Id}/approve", null)).ReadAs<WithdrawalResponse>();
+        approved.Status.ShouldBe(WithdrawalStatus.Approved);
+    }
+
+    [Fact]
+    public async Task Member_sees_only_their_own_dividend_line_for_a_year_matching_the_staff_view()
+    {
+        var me = await MemberClient(); // M00001
+        var mine = await (await me.GetAsync("/api/self/dividends")).ReadAs<List<MyDividendResponse>>();
+        var fy2025 = mine.SingleOrDefault(d => d.FinancialYear == 2025);
+        if (fy2025 is null) return; // M00001's FY2025 average balance rounded to zero — nothing to assert against.
+
+        var accountant = _factory.ClientWithToken(await _factory.TokenFor("accountant", IdentitySeeder.DemoPassword));
+        accountant.DefaultRequestHeaders.Add("X-Tenant", DemoTenant.Slug);
+        var declarations = await (await accountant.GetAsync("/api/savings/dividends")).ReadAs<List<DividendResponse>>();
+        var declaration = declarations.Single(d => d.FinancialYear == 2025);
+        var staffLine = declaration.Lines.Single(l => l.MemberId == DemoTenant.MemberId("M00001"));
+
+        fy2025.Status.ShouldBe(declaration.Status);
+        fy2025.NetPayable.ShouldBe(staffLine.NetPayable);
+        fy2025.ShareDividend.ShouldBe(staffLine.ShareDividend);
+
+        // Scoped to their own line only — the filtered-by-year query never leaks a year they have no line in.
+        var filtered = await (await me.GetAsync("/api/self/dividends?year=2025")).ReadAs<List<MyDividendResponse>>();
+        filtered.Single().FinancialYear.ShouldBe(2025);
     }
 
     [Fact]

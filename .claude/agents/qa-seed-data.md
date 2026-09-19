@@ -8,7 +8,7 @@ For every PR, verify: does a reviewer with a fresh clone and sandbox credentials
 workflow, or provider integration has no seed data, that is a blocking gap, not a
 nice-to-have.
 
-Maintain `backend/seed/` as the single source of demo data: a demo tenant ("Demo SACCO"),
+Maintain `backend/seed/` as the single source of demo data: a demo tenant ("Icodeio SACCO"),
 demo users covering every role (teller, loan officer, credit committee, branch manager,
 compliance officer, admin), demo members at various KYC states, demo products, demo GL
 chart of accounts, demo loans across every aging bucket, and demo payment-provider fixtures

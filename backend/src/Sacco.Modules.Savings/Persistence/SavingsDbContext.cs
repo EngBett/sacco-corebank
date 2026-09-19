@@ -14,6 +14,9 @@ public class SavingsDbContext(DbContextOptions<SavingsDbContext> options, ITenan
     public DbSet<SavingsAccount> Accounts => Set<SavingsAccount>();
     public DbSet<WithdrawalRequest> Withdrawals => Set<WithdrawalRequest>();
     public DbSet<DividendDeclaration> Dividends => Set<DividendDeclaration>();
+    public DbSet<ShareListing> ShareListings => Set<ShareListing>();
+    public DbSet<FeeRule> FeeRules => Set<FeeRule>();
+    public DbSet<BalanceEnquiry> BalanceEnquiries => Set<BalanceEnquiry>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -23,6 +26,16 @@ public class SavingsDbContext(DbContextOptions<SavingsDbContext> options, ITenan
             b.HasKey(p => p.Id);
             b.Property(p => p.Code).HasMaxLength(30).IsRequired();
             b.HasIndex(p => new { p.TenantId, p.Code }).IsUnique();
+            b.OwnsOne(p => p.Listing, l =>
+            {
+                l.Property(x => x.ShowOnPublicSite).HasColumnName("listing_show_on_public_site");
+                l.Property(x => x.DisplayOrder).HasColumnName("listing_display_order");
+                l.Property(x => x.Features).HasColumnName("listing_features");
+                l.Property(x => x.Requirements).HasColumnName("listing_requirements");
+                l.Property(x => x.AmountNote).HasColumnName("listing_amount_note").HasMaxLength(200);
+                l.Property(x => x.ApplicationFormUrl).HasColumnName("listing_application_form_url").HasMaxLength(500);
+            });
+            b.Navigation(p => p.Listing).IsRequired();
             b.Property(p => p.Name).HasMaxLength(150).IsRequired();
             b.Property(p => p.Description).HasMaxLength(500);
             b.Property(p => p.ControlGlAccountCode).HasMaxLength(20).IsRequired();
@@ -62,6 +75,8 @@ public class SavingsDbContext(DbContextOptions<SavingsDbContext> options, ITenan
             b.Property(w => w.JournalReference).HasMaxLength(100);
             b.Property(w => w.RejectionReason).HasMaxLength(500);
             b.Property(w => w.Narrative).HasMaxLength(300);
+            b.Property(w => w.FeeGlAccountCode).HasMaxLength(20);
+            b.Property(w => w.FeeSegment).HasConversion<int?>();
             b.Property(w => w.Channel).HasConversion<int>();
             b.Property(w => w.Status).HasConversion<int>();
             b.HasIndex(w => new { w.TenantId, w.Status });
@@ -94,6 +109,63 @@ public class SavingsDbContext(DbContextOptions<SavingsDbContext> options, ITenan
             foreach (var prop in new[] { nameof(DividendLine.ShareBalance), nameof(DividendLine.ShareDividend), nameof(DividendLine.DepositBalance), nameof(DividendLine.DepositInterest), nameof(DividendLine.WithholdingTax) })
                 b.Property(prop).HasColumnType("numeric(18,2)");
             b.Ignore(l => l.NetPayable);
+        });
+
+        mb.Entity<ShareListing>(b =>
+        {
+            b.ToTable("share_listings");
+            b.HasKey(l => l.Id);
+            b.Property(l => l.SellerSharesAccountNumber).HasMaxLength(30).IsRequired();
+            b.Property(l => l.SellerFosaAccountNumber).HasMaxLength(30).IsRequired();
+            b.Property(l => l.BuyerSharesAccountNumber).HasMaxLength(30);
+            b.Property(l => l.BuyerFosaAccountNumber).HasMaxLength(30);
+            b.Property(l => l.Amount).HasColumnType("numeric(18,2)");
+            b.Property(l => l.RejectionReason).HasMaxLength(500);
+            b.Property(l => l.JournalReference).HasMaxLength(100);
+            b.Property(l => l.Status).HasConversion<int>();
+            b.HasIndex(l => new { l.TenantId, l.Status });
+            b.HasIndex(l => new { l.TenantId, l.SellerMemberId });
+            b.HasIndex(l => new { l.TenantId, l.BuyerMemberId });
+        });
+
+        mb.Entity<FeeRule>(b =>
+        {
+            b.ToTable("fee_rules");
+            b.HasKey(r => r.Id);
+            b.Property(r => r.TransactionType).HasConversion<int>();
+            b.Property(r => r.Channel).HasConversion<int?>();
+            b.Property(r => r.ChargeType).HasConversion<int>();
+            b.Property(r => r.Status).HasConversion<int>();
+            b.Property(r => r.FeeIncomeSegment).HasConversion<int>();
+            b.Property(r => r.ProductCode).HasMaxLength(30);
+            b.Property(r => r.FeeIncomeGlAccountCode).HasMaxLength(20).IsRequired();
+            b.Property(r => r.RejectionReason).HasMaxLength(500);
+            foreach (var prop in new[] { nameof(FeeRule.MinAmount), nameof(FeeRule.MaxAmount), nameof(FeeRule.FixedAmount), nameof(FeeRule.MinCharge), nameof(FeeRule.MaxCharge) })
+                b.Property(prop).HasColumnType("numeric(18,2)");
+            b.HasIndex(r => new { r.TenantId, r.Status, r.TransactionType });
+            b.HasMany(r => r.Tiers).WithOne().HasForeignKey(t => t.RuleId).OnDelete(DeleteBehavior.Cascade);
+            b.Navigation(r => r.Tiers).AutoInclude();
+        });
+
+        mb.Entity<FeeTier>(b =>
+        {
+            b.ToTable("fee_tiers");
+            b.HasKey(t => t.Id);
+            b.Property(t => t.UpTo).HasColumnType("numeric(18,2)");
+            b.Property(t => t.Charge).HasColumnType("numeric(18,2)");
+        });
+
+        mb.Entity<BalanceEnquiry>(b =>
+        {
+            b.ToTable("balance_enquiries");
+            b.HasKey(e => e.Id);
+            b.Property(e => e.AccountNumber).HasMaxLength(30).IsRequired();
+            b.Property(e => e.ChargedAccountNumber).HasMaxLength(30).IsRequired();
+            b.Property(e => e.IdempotencyKey).HasMaxLength(64).IsRequired();
+            b.Property(e => e.JournalReference).HasMaxLength(100);
+            b.Property(e => e.Fee).HasColumnType("numeric(18,2)");
+            b.HasIndex(e => new { e.TenantId, e.MemberId, e.IdempotencyKey }).IsUnique();
+            b.HasIndex(e => new { e.TenantId, e.MemberId, e.VisibleUntil });
         });
 
         base.OnModelCreating(mb);

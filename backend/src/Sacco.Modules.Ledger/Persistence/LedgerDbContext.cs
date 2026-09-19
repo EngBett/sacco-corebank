@@ -63,6 +63,7 @@ public class LedgerDbContext(DbContextOptions<LedgerDbContext> options, ITenantC
             b.HasIndex(e => new { e.TenantId, e.Reference }).IsUnique();
             b.HasIndex(e => new { e.TenantId, e.ValueDate });
             b.HasIndex(e => new { e.TenantId, e.Status });
+            b.HasIndex(e => new { e.TenantId, e.BranchId });
             b.Property(e => e.Description).HasMaxLength(500).IsRequired();
             b.Property(e => e.Source).HasMaxLength(50).IsRequired();
             b.Property(e => e.RejectionReason).HasMaxLength(500);

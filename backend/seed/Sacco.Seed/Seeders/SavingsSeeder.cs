@@ -53,11 +53,22 @@ public sealed class SavingsSeeder(SavingsDbContext db, SavingsService savings, I
         }
         await db.SaveChangesAsync(ct);
         logger.Created("Savings products", created);
+
+        // Public-website listings: filled in where a product has none yet, never overwriting what a SACCO has written.
+        var listed = 0;
+        foreach (var product in await db.Products.ToListAsync(ct))
+        {
+            if (product.Listing.Features.Count > 0 || !PublicCatalogue.Savings.TryGetValue(product.Code, out var listing)) continue;
+            product.SetListing(listing);
+            listed++;
+        }
+        await db.SaveChangesAsync(ct);
+        if (listed > 0) logger.LogInformation("  Savings product listings added: {Count}", listed);
     }
 }
 
 /// <summary>Post-ledger scenarios: fixed deposits, withdrawals in each state, and a dividend declaration awaiting approval.</summary>
-public sealed class SavingsScenarioSeeder(SavingsDbContext db, SavingsService savings, DividendService dividends, Sacco.Modules.Members.Application.MemberService members, Sacco.Shared.Members.IMemberDirectory directory, ILogger<SavingsScenarioSeeder> logger) : ISeeder
+public sealed class SavingsScenarioSeeder(SavingsDbContext db, SavingsService savings, DividendService dividends, ShareMarketplaceService marketplace, FeeMatrixService fees, Sacco.Modules.Members.Application.MemberService members, Sacco.Shared.Members.IMemberDirectory directory, ILogger<SavingsScenarioSeeder> logger) : ISeeder
 {
     public int Order => 25;
 
@@ -116,6 +127,54 @@ public sealed class SavingsScenarioSeeder(SavingsDbContext db, SavingsService sa
         {
             await dividends.DeclareAsync(2025, shareRateBps: 800, depositRateBps: 600, DemoTenant.Users.Accountant, ct);
             logger.Created("Dividend declaration (pending approval)", 1);
+        }
+
+        // Fee matrix (ADR 0015): one tariff of each charge type, live, plus one proposal waiting for a checker. Proposed by
+        // the accountant and approved by the branch manager, so maker-checker is visible in the audit trail from day one.
+        if (!await db.FeeRules.AnyAsync(ct))
+        {
+            var accountant = DemoTenant.Users.Accountant;
+            var manager = DemoTenant.Users.BranchManager;
+            CreateFeeRuleCommand Rule(FeeTransactionType type, FeeChannel? channel, string? product, decimal min, decimal? max, FeeChargeType charge,
+                decimal? fixedAmount = null, int? rateBps = null, decimal? minCharge = null, decimal? maxCharge = null, FeeTierInput[]? tiers = null) =>
+                new(type, channel, product, min, max, charge, fixedAmount, rateBps, minCharge, maxCharge, tiers, Coa.FosaFeesAndCharges, null);
+
+            var live = new[]
+            {
+                Rule(FeeTransactionType.Withdrawal, FeeChannel.MPesa, SavingsSeeder.FosaCurrent, 1m, 150_000m, FeeChargeType.Tiered,
+                    tiers: [new(1_000m, 30m), new(5_000m, 50m), new(20_000m, 75m), new(150_000m, 110m)]),
+                Rule(FeeTransactionType.Withdrawal, FeeChannel.AirtelMoney, SavingsSeeder.FosaCurrent, 1m, 150_000m, FeeChargeType.Percentage, rateBps: 100, minCharge: 20m, maxCharge: 150m),
+                Rule(FeeTransactionType.Withdrawal, FeeChannel.BankTransfer, null, 1m, 1_000_000m, FeeChargeType.Percentage, rateBps: 50, minCharge: 50m, maxCharge: 500m),
+                Rule(FeeTransactionType.Deposit, FeeChannel.CheckOff, SavingsSeeder.BosaDeposit, 1m, null, FeeChargeType.Fixed, fixedAmount: 20m),
+                Rule(FeeTransactionType.BalanceEnquiry, null, SavingsSeeder.FosaCurrent, 0m, null, FeeChargeType.Fixed, fixedAmount: 10m),
+            };
+            foreach (var r in live)
+                await fees.ApproveAsync((await fees.CreateAsync(r, accountant, ct)).Id, manager, ct);
+            await fees.CreateAsync(Rule(FeeTransactionType.Deposit, FeeChannel.MPesa, SavingsSeeder.FosaCurrent, 1m, 70_000m, FeeChargeType.Percentage, rateBps: 100, maxCharge: 50m), accountant, ct);
+            logger.Created("Fee rules (5 live, 1 awaiting approval)", live.Length + 1);
+        }
+
+        // Shares marketplace (ADR 0008 follow-up): one open listing to browse, one already claimed and
+        // awaiting staff approval. Amounts are modest against the random 10k-35k seeded share balances,
+        // but a member's headroom above the product minimum still varies, so skip gracefully if short.
+        if (!await db.ShareListings.AnyAsync(ct))
+        {
+            created = 0;
+            try
+            {
+                await marketplace.ListAsync(DemoTenant.MemberId("M00002"), 2_000m, DemoTenant.Users.Teller, ct);
+                created++;
+            }
+            catch (DomainException ex) { logger.LogWarning("Skipping open share listing for M00002: {Reason}", ex.Message); }
+
+            try
+            {
+                var listing = await marketplace.ListAsync(DemoTenant.MemberId("M00008"), 1_500m, DemoTenant.Users.Teller, ct);
+                await marketplace.ClaimAsync(listing.Id, DemoTenant.MemberId("M00010"), DemoTenant.Users.Teller, ct);
+                created++;
+            }
+            catch (DomainException ex) { logger.LogWarning("Skipping claimed share listing for M00008/M00010: {Reason}", ex.Message); }
+            logger.Created("Shares marketplace listings", created);
         }
     }
 }

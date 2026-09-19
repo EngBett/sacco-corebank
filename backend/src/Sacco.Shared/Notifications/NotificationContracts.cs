@@ -42,6 +42,20 @@ public interface IEmailSender
 /// <param name="ContentType">MIME type, e.g. <c>application/pdf</c>.</param>
 public sealed record EmailAttachment(string FileName, string ContentType, byte[] Content);
 
+/// <summary>
+/// Outbound SMS, usable by any module — not just the Notifications module's own per-notification
+/// dispatch. Implemented by the Notifications module (sandbox by default, a real gateway when
+/// <c>Notifications:Sms:Mode=Live</c> — see ADR 0012); a module that needs to send an SMS outside
+/// the notification/audience machinery (e.g. a member login OTP) depends on this Shared contract,
+/// never on Notifications' internal sender types.
+/// </summary>
+public interface ISmsSender
+{
+    string Name { get; }
+    bool IsSandbox { get; }
+    Task<string?> SendAsync(string phoneNumber, string body, CancellationToken ct);
+}
+
 /// <summary>Either an explicit set of users or "everyone in the tenant who holds a permission".</summary>
 public sealed record NotificationAudience
 {

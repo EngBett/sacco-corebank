@@ -39,7 +39,13 @@ public static class Permissions
         public const string LoansView = "self.loans.view";
         public const string LoansApply = "self.loans.apply";
         public const string PaymentsInitiate = "self.payments.initiate";
-        public static readonly IReadOnlyList<string> All = [ProfileView, AccountsView, StatementsView, LoansView, LoansApply, PaymentsInitiate];
+        /// <summary>Requesting a withdrawal from one's own account — still maker-checker (ADR 0014): a staff member must approve before any payout is triggered.</summary>
+        public const string WithdrawalsRequest = "self.withdrawals.request";
+        public const string DividendsView = "self.dividends.view";
+        /// <summary>List/browse/buy on the shares marketplace — still maker-checker: a staff member must approve before shares or cash actually move.</summary>
+        public const string SharesMarketplaceTrade = "self.shares_marketplace.trade";
+        public static readonly IReadOnlyList<string> All =
+            [ProfileView, AccountsView, StatementsView, LoansView, LoansApply, PaymentsInitiate, WithdrawalsRequest, DividendsView, SharesMarketplaceTrade];
     }
 
     public static class Savings
@@ -52,6 +58,12 @@ public static class Permissions
         public const string WithdrawalApprove = "savings.withdrawal.approve";
         public const string DividendsDeclare = "savings.dividends.declare";
         public const string DividendsApprove = "savings.dividends.approve";
+        /// <summary>Checker for a member-to-member share sale claimed on the marketplace (ADR 0008 follow-up).</summary>
+        public const string SharesMarketplaceApprove = "savings.shares_marketplace.approve";
+        /// <summary>Maker for the fee matrix (ADR 0015): propose a new or revised fee rule.</summary>
+        public const string FeesManage = "savings.fees.manage";
+        /// <summary>Checker for the fee matrix: approve/reject proposed rules and deactivate live ones.</summary>
+        public const string FeesApprove = "savings.fees.approve";
     }
 
     public static class Loans
@@ -87,6 +99,8 @@ public static class Permissions
     public static class Admin
     {
         public const string UsersManage = "admin.users.manage";
+        /// <summary>Propose a new staff user; a holder of <see cref="UsersManage"/> must approve before the invitation email is sent.</summary>
+        public const string UsersInvite = "admin.users.invite";
         public const string RolesManage = "admin.roles.manage";
         public const string TenantManage = "admin.tenant.manage";
         public const string AuditView = "admin.audit.view";
@@ -121,6 +135,9 @@ public static class Permissions
         new(Savings.WithdrawalApprove, "Approve withdrawals above teller limit"),
         new(Savings.DividendsDeclare, "Declare a dividend (maker)"),
         new(Savings.DividendsApprove, "Approve a dividend declaration (checker)"),
+        new(Savings.SharesMarketplaceApprove, "Approve a member-to-member share sale (checker)"),
+        new(Savings.FeesManage, "Propose deposit, withdrawal and balance-enquiry fee rules (maker)"),
+        new(Savings.FeesApprove, "Approve, reject or deactivate fee rules (checker)"),
 
         new(Loans.View, "View loans"),
         new(Loans.ProductsManage, "Maintain loan products"),
@@ -143,6 +160,7 @@ public static class Permissions
         new(Reporting.RecipientsManage, "Set recipients for the nightly PDF digest and send it on demand"),
 
         new(Admin.UsersManage, "Manage staff users"),
+        new(Admin.UsersInvite, "Propose new staff users (a user administrator approves)"),
         new(Admin.RolesManage, "Manage roles and permission bundles"),
         new(Admin.TenantManage, "Manage tenant settings and branding"),
         new(Admin.AuditView, "View the audit log"),
@@ -154,6 +172,9 @@ public static class Permissions
         new(Self.LoansView, "Member self-service: view own loans"),
         new(Self.LoansApply, "Member self-service: apply for a loan"),
         new(Self.PaymentsInitiate, "Member self-service: initiate a mobile-money deposit"),
+        new(Self.WithdrawalsRequest, "Member self-service: request a withdrawal from own account"),
+        new(Self.DividendsView, "Member self-service: view own dividend history"),
+        new(Self.SharesMarketplaceTrade, "Member self-service: list, browse and buy on the shares marketplace"),
     ];
 
     /// <summary>Permissions a staff role may bundle: everything except the member self-service set.</summary>

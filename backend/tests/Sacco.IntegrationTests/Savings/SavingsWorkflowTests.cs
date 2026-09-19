@@ -103,6 +103,15 @@ public sealed class SavingsWorkflowTests(PostgresFixture pg) : IDisposable
     }
 
     [Fact]
+    public async Task Cannot_withdraw_directly_from_a_shares_account()
+    {
+        var account = LedgerSeeder.SharesAccount("M00002");
+        var r = await Teller.PostAsJsonAsync($"/api/savings/accounts/{account}/withdrawals", new WithdrawalRequestDto(1_000m, PayoutChannel.Cash, null, "Trying to cash out shares"));
+        r.StatusCode.ShouldBe(HttpStatusCode.UnprocessableEntity);
+        (await r.Content.ReadAsStringAsync()).ShouldContain("savings.shares.no_direct_withdrawal");
+    }
+
+    [Fact]
     public async Task Bosa_withdrawal_requires_notice_period_before_payout()
     {
         var account = LedgerSeeder.SavingsAccount("M00007");

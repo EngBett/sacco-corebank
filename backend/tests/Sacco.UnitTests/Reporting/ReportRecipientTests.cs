@@ -13,8 +13,8 @@ public class ReportRecipientTests
     [Fact]
     public void Email_is_normalised_and_validated()
     {
-        var r = ReportRecipient.Create(Guid.NewGuid(), Tenant, "  Board.Chair@DemoSacco.example.CO.KE  ", "Board Chair", By, Now);
-        r.Email.ShouldBe("board.chair@demosacco.example.co.ke");
+        var r = ReportRecipient.Create(Guid.NewGuid(), Tenant, "  Board.Chair@Icodeio.example.CO.KE  ", "Board Chair", By, Now);
+        r.Email.ShouldBe("board.chair@icodeio.example.co.ke");
         r.IsActive.ShouldBeTrue();
 
         Should.Throw<DomainRuleException>(() => ReportRecipient.Create(Guid.NewGuid(), Tenant, "not-an-email", "x", By, Now))

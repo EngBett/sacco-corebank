@@ -2,7 +2,7 @@
 # run API (`dotnet run --project backend/src/Sacco.Api`) needs, none of them requiring any credential; everything else
 # is an opt-in profile. Everything here is sandbox: no production credentials exist anywhere in this file.
 #   docker compose up -d postgres mailpit mocked-sms
-#   docker compose --profile app run --rm seed        # migrate + seed the Demo SACCO
+#   docker compose --profile app run --rm seed        # migrate + seed the Icodeio SACCO
 #   docker compose --profile app up -d api portal public-site
 services:
   postgres:
@@ -97,6 +97,7 @@ services:
     build: { context: ., dockerfile: frontend/public-site/Dockerfile }
     environment:
       API_BASE_URL: "http://api:8080"
+      API_BROWSER_URL: "http://localhost:5000"
       NEXT_PUBLIC_DEFAULT_TENANT: demo
       PUBLIC_API_KEY: sandbox-public-api-key
       TURNSTILE_SANDBOX: "true"

@@ -1,12 +1,22 @@
 # Seed data
 
 This is the single source of demo/test data for the whole platform. It must be idempotent
-(safe to re-run against a fresh database) and must fully populate the "Demo SACCO" tenant.
+(safe to re-run against a fresh database) and must fully populate the "Icodeio SACCO" tenant.
 
 ## What must exist after seeding
 
-- **Tenant**: Demo SACCO, with branding (logo placeholder, brand colors, name) set so the
-  portal and public site render correctly out of the box.
+- **Tenant**: Icodeio SACCO (slug `demo`), with branding (the transparent-background Icodeio logo served from
+  `Sacco.Api/wwwroot/tenant-assets/demo/`, the Icodeio favicon from the same folder, the platform's default teal theme colours, name) set so the portal, public
+  site and mobile app render correctly out of the box. The logo never sets the theme colours. A database
+  seeded under the old "Demo SACCO" name is renamed on the next seed run, without needing `--reset`.
+- **Public website catalogue** (ADR 0017): listings (features, requirements, amount notes) for every savings product and
+  loan product, loans grouped as FOSA (salary advance, long-term advance, salary personal loan), BOSA (development,
+  school fees, emergency) and MSME (group/chama, business, farm input, asset finance), and nine member services
+  (`Data/PublicCatalogue.cs`). Missing listings are filled on re-seed; text edited in the portal is kept.
+- **Branches** (ADR 0018): a head office in Nakuru plus Nakuru Town (`NKR`) and Eldoret (`ELD`), so branch filters,
+  branch-stamped postings and the public site's contact page have something to show. Demo staff are placed at an
+  office and members are spread across all three. A database seeded before branches existed is backfilled on the next
+  run, without `--reset`.
 - **Users**, one per role at minimum: teller, loan officer, credit committee member, branch
   manager, compliance officer, system admin. Document demo credentials in this file once
   auth is implemented (never commit real secrets — these are sandbox-only demo accounts).
@@ -55,6 +65,15 @@ Integration tests run exactly this seeder against a Testcontainers Postgres.
 
 All accounts use the password `Demo2026!pass` (constant `IdentitySeeder.DemoPassword`).
 
+Staff sign-in needs two-step verification (ADR 0016). Demo users are **not** pre-enrolled: the first time you sign in to
+the portal as one, scan the QR code with Google Authenticator or Microsoft Authenticator and save the recovery codes.
+To start over for a demo user, sign in as `admin` and use **Reset 2-step verification** on the Users page, or clear
+`identity.users.totp_*` in the database.
+
+The Branch Manager (`manager`) has proposed one invitation (`fmuthoni`, Teller) that waits for the System Admin to approve
+on **Admin → Users**. Approving it sends the activation email to Mailpit (http://localhost:8025); forgot-password emails
+land there too.
+
 | Username | Role | What they can demo |
 |---|---|---|
 | `admin` | System Admin | Users, roles/permission bundles, tenant branding, audit log |
@@ -94,7 +113,7 @@ Sandbox senders record every delivery on `notifications.outbound_messages`; `adm
 
 ## Daily PDF digest (ADR 0013)
 
-`admin@demosacco.example.co.ke` is seeded as the one recipient of the nightly branded PDF (capital adequacy, liquidity,
+`admin@icodeio.example.co.ke` is seeded as the one recipient of the nightly branded PDF (capital adequacy, liquidity,
 portfolio quality) at Admin → Daily PDF digest (`admin`, `compliance`). The scheduler itself is disabled in the seed
 tool and tests (`Reporting:DailyDigest:Enabled=false` for tests; the seed tool never runs schedulers at all); use the
 page's "Preview PDF" or "Send now" to see it without waiting for midnight.
@@ -106,6 +125,21 @@ CRB-listed). Every seeded loan carries its scores. The sandbox bureau keys off t
 `M00010` (ID …10) is CRB-listed — his seeded loan (`LN-000005`) shows a **Decline** recommendation that the committee
 overrode, and `M00009` (ID …09) gets an "unavailable" bureau result, which turns her approve-band score into **Refer**.
 Sign in as `manager` to edit the scorecard at `/loans/scoring`; as `loanofficer` to recompute a score on any open application.
+
+## Audit trail (ADR 0019)
+
+Because the seeders drive the real workflows, the audit trail fills itself: every registration, KYC decision, posting,
+approval and product change made while seeding lands in `platform.audit_log` with the acting demo user on it. Sign in as
+`admin` and open the audit page to filter by action prefix (`loans.`), actor, office, outcome or date, export the filtered
+rows as CSV, and run **Verify** — it recomputes the hash chain and should report the trail intact. Entries written into a
+database seeded before the chain existed are counted separately as *unchained*; they are not reported as tampering.
+
+## Demo mode
+
+`Demo:Enabled` (on in `appsettings.Development.json`) marks the deployment as a demonstration: the branding endpoint
+carries a `demo` notice and both websites show a banner saying the data is sample data and the platform can be bought,
+with `Demo:PurchaseUrl` / `Demo:ContactEmail`. It changes nothing about how the system behaves — turn it off for a real
+tenant.
 
 ## Notifications
 

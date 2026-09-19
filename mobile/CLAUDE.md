@@ -17,3 +17,10 @@ apps) with the product owner and write the decision as an ADR in `docs/architect
 
 
 > **Update (Phase 7 prep):** a proposal is written up in `docs/architecture/0008-mobile-scope.md` — member self-service app first, field-agent app deferred. It is *Proposed*, not accepted; confirm with the product owner before any mobile code is written.
+
+> **Update (2026-09-16):** accepted and built. The member self-service app is a Flutter app
+> (feature-based clean architecture, Riverpod, `flutter_appauth` for OIDC PKCE) — see
+> `README.md` in this directory for what it does and how to run it, and ADR 0008's
+> "Implementation note (2026-09-16)" for the two backend endpoints it needed
+> (`/api/self/withdrawals`, `/api/self/dividends`) and the deposit/withdrawal channel-scope
+> decisions. The field-agent app is still deferred — no ADR for it exists yet.

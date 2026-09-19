@@ -1,0 +1,6 @@
+@MockedMpesa.API_HostAddress = http://localhost:5022
+
+GET {{MockedMpesa.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -11,6 +11,98 @@
     }
   ],
   "paths": {
+    "/api/public/services": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "operationId": "ListPublicServices",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicServiceResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/branches": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "operationId": "ListPublicBranches",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicBranch"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/auth/otp/request": {
+      "post": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "RequestMemberLoginOtp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestOtpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/self/auth/pin/verify": {
+      "post": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "VerifyMyPin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyPinRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/self/statements/{accountNumber}": {
       "get": {
         "tags": [
@@ -253,6 +345,218 @@
         }
       }
     },
+    "/api/admin/branches": {
+      "get": {
+        "tags": [
+          "Platform admin"
+        ],
+        "operationId": "ListBranches",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BranchResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Platform admin"
+        ],
+        "operationId": "CreateBranch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveBranchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/branches/{id}": {
+      "put": {
+        "tags": [
+          "Platform admin"
+        ],
+        "operationId": "UpdateBranch",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveBranchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/public-services": {
+      "get": {
+        "tags": [
+          "Platform admin"
+        ],
+        "operationId": "ListPublicServicesAdmin",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicServiceResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Platform admin"
+        ],
+        "operationId": "CreatePublicService",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePublicServiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicServiceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/public-services/{id}": {
+      "put": {
+        "tags": [
+          "Platform admin"
+        ],
+        "operationId": "UpdatePublicService",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePublicServiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicServiceResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Platform admin"
+        ],
+        "operationId": "DeletePublicService",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
     "/api/admin/tenant/branding": {
       "put": {
         "tags": [
@@ -284,6 +588,71 @@
         "operationId": "GetAuditLog",
         "parameters": [
           {
+            "name": "action",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "actorUserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "schema": {
@@ -308,6 +677,35 @@
               "format": "int32",
               "default": 50
             }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfAuditLogResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/audit-log/export.csv": {
+      "get": {
+        "tags": [
+          "Platform admin"
+        ],
+        "operationId": "ExportAuditLog",
+        "parameters": [
+          {
+            "name": "action",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "entityType",
@@ -322,6 +720,79 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "actorUserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/audit-log/verify": {
+      "get": {
+        "tags": [
+          "Platform admin"
+        ],
+        "operationId": "VerifyAuditLog",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -330,7 +801,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResultOfAuditLogResponse"
+                  "$ref": "#/components/schemas/AuditChainCheck"
                 }
               }
             }
@@ -539,34 +1010,6 @@
             }
           }
         }
-      },
-      "post": {
-        "tags": [
-          "Identity admin"
-        ],
-        "operationId": "CreateUser",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateUserRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserResponse"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/api/admin/users/{id}": {
@@ -599,6 +1042,234 @@
           },
           "404": {
             "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/admin/users/invitations": {
+      "get": {
+        "tags": [
+          "Identity admin"
+        ],
+        "operationId": "ListStaffInvitations",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/StaffInvitationStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StaffInvitationResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Identity admin"
+        ],
+        "operationId": "InviteStaffUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffInvitationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/invitations/{id}/approve": {
+      "post": {
+        "tags": [
+          "Identity admin"
+        ],
+        "operationId": "ApproveStaffInvitation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffInvitationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/invitations/{id}/reject": {
+      "post": {
+        "tags": [
+          "Identity admin"
+        ],
+        "operationId": "RejectStaffInvitation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectInvitationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffInvitationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/invitations/{id}/resend": {
+      "post": {
+        "tags": [
+          "Identity admin"
+        ],
+        "operationId": "ResendStaffInvitation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffInvitationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/invitations/{id}/revoke": {
+      "post": {
+        "tags": [
+          "Identity admin"
+        ],
+        "operationId": "RevokeStaffInvitation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffInvitationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/branch": {
+      "put": {
+        "tags": [
+          "Identity admin"
+        ],
+        "operationId": "SetUserBranch",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserBranchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -685,12 +1356,12 @@
         }
       }
     },
-    "/api/admin/users/{id}/reset-password": {
+    "/api/admin/users/{id}/send-password-reset": {
       "post": {
         "tags": [
           "Identity admin"
         ],
-        "operationId": "ResetUserPassword",
+        "operationId": "SendUserPasswordReset",
         "parameters": [
           {
             "name": "id",
@@ -702,16 +1373,30 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResetPasswordRequest"
-              }
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/reset-mfa": {
+      "post": {
+        "tags": [
+          "Identity admin"
+        ],
+        "operationId": "ResetUserMfa",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
           "204": {
             "description": "No Content"
@@ -971,6 +1656,14 @@
             "in": "query",
             "schema": {
               "$ref": "#/components/schemas/JournalEntryStatus"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -1265,6 +1958,14 @@
             "in": "query",
             "schema": {
               "$ref": "#/components/schemas/KycStatus"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -1617,6 +2318,47 @@
           },
           "404": {
             "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/members/{id}/branch": {
+      "put": {
+        "tags": [
+          "Members"
+        ],
+        "operationId": "SetMemberBranch",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetMemberBranchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2065,6 +2807,46 @@
         }
       }
     },
+    "/api/savings/products/{code}/listing": {
+      "put": {
+        "tags": [
+          "Savings products"
+        ],
+        "operationId": "UpdateSavingsProductListing",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductListing"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/savings/accounts": {
       "post": {
         "tags": [
@@ -2256,7 +3038,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/SavingsAccountResponse"
+                    "$ref": "#/components/schemas/MySavingsAccountResponse"
                   }
                 }
               }
@@ -2277,7 +3059,719 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MemberSavingsSummary"
+                  "$ref": "#/components/schemas/MySavingsSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/accounts/{accountNumber}/balance-enquiries": {
+      "post": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "RevealMyBalance",
+        "parameters": [
+          {
+            "name": "accountNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevealBalanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevealBalanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/fees/quote": {
+      "get": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "QuoteMyFee",
+        "parameters": [
+          {
+            "name": "transactionType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FeeTransactionType"
+            }
+          },
+          {
+            "name": "accountNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/FeeChannel"
+            }
+          },
+          {
+            "name": "amount",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeeQuoteResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/withdrawals": {
+      "post": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "RequestMyWithdrawal",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelfWithdrawalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WithdrawalResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "GetMyWithdrawals",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WithdrawalResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/dividends": {
+      "get": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "GetMyDividends",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MyDividendResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/shares-marketplace/listings": {
+      "post": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "ListMySharesForSale",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateShareListingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareListingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/shares-marketplace/listings/open": {
+      "get": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "BrowseOpenShareListings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShareListingResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/shares-marketplace/listings/mine": {
+      "get": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "GetMyShareListings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShareListingResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/shares-marketplace/listings/{id}/claim": {
+      "post": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "ClaimShareListing",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareListingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/self/shares-marketplace/listings/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Self-service"
+        ],
+        "operationId": "CancelMyShareListing",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareListingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/savings/fees": {
+      "get": {
+        "tags": [
+          "Fee matrix"
+        ],
+        "operationId": "ListFeeRules",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/FeeRuleStatus"
+            }
+          },
+          {
+            "name": "transactionType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/FeeTransactionType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FeeRuleResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Fee matrix"
+        ],
+        "operationId": "CreateFeeRule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFeeRuleCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeeRuleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/savings/fees/{id}": {
+      "get": {
+        "tags": [
+          "Fee matrix"
+        ],
+        "operationId": "GetFeeRule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeeRuleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/savings/fees/{id}/approve": {
+      "post": {
+        "tags": [
+          "Fee matrix"
+        ],
+        "operationId": "ApproveFeeRule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeeRuleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/savings/fees/{id}/reject": {
+      "post": {
+        "tags": [
+          "Fee matrix"
+        ],
+        "operationId": "RejectFeeRule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeeRuleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/savings/fees/{id}/deactivate": {
+      "post": {
+        "tags": [
+          "Fee matrix"
+        ],
+        "operationId": "DeactivateFeeRule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeeRuleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/savings/fees/quote": {
+      "post": {
+        "tags": [
+          "Fee matrix"
+        ],
+        "operationId": "QuoteFee",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeeQuoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeeQuoteResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/savings/shares-marketplace": {
+      "get": {
+        "tags": [
+          "Shares marketplace"
+        ],
+        "operationId": "ListShareListings",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ShareListingStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShareListingResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/savings/shares-marketplace/pending": {
+      "get": {
+        "tags": [
+          "Shares marketplace"
+        ],
+        "operationId": "ListPendingShareListings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShareListingResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/savings/shares-marketplace/{id}": {
+      "get": {
+        "tags": [
+          "Shares marketplace"
+        ],
+        "operationId": "GetShareListing",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareListingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/savings/shares-marketplace/{id}/approve": {
+      "post": {
+        "tags": [
+          "Shares marketplace"
+        ],
+        "operationId": "ApproveShareListing",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareListingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/savings/shares-marketplace/{id}/reject": {
+      "post": {
+        "tags": [
+          "Shares marketplace"
+        ],
+        "operationId": "RejectShareListing",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareListingResponse"
                 }
               }
             }
@@ -2802,6 +4296,46 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateLoanProductRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanProductResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/products/{code}/listing": {
+      "put": {
+        "tags": [
+          "Loan products"
+        ],
+        "operationId": "UpdateLoanProductListing",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanProductListingRequest"
               }
             }
           },
@@ -5693,6 +7227,58 @@
           }
         }
       },
+      "AuditChainCheck": {
+        "required": [
+          "checked",
+          "intact",
+          "firstBrokenEntryId",
+          "firstBrokenAt",
+          "problem"
+        ],
+        "type": "object",
+        "properties": {
+          "checked": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "intact": {
+            "type": "boolean"
+          },
+          "firstBrokenEntryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "firstBrokenAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "problem": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unchained": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32",
+            "default": 0
+          }
+        }
+      },
       "AuditLogResponse": {
         "required": [
           "id",
@@ -5702,7 +7288,13 @@
           "entityId",
           "actorUserId",
           "details",
-          "correlationId"
+          "correlationId",
+          "actorName",
+          "outcome",
+          "ipAddress",
+          "userAgent",
+          "branchId",
+          "hash"
         ],
         "type": "object",
         "properties": {
@@ -5738,6 +7330,116 @@
               "null",
               "string"
             ]
+          },
+          "actorName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/AuditOutcome"
+          },
+          "ipAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "userAgent": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "hash": {
+            "type": "string"
+          }
+        }
+      },
+      "AuditOutcome": {
+        "enum": [
+          "Success",
+          "Failure",
+          "Denied"
+        ]
+      },
+      "BranchResponse": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "isHeadOffice",
+          "county",
+          "town",
+          "physicalAddress",
+          "phoneNumber",
+          "email",
+          "displayOrder",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isHeadOffice": {
+            "type": "boolean"
+          },
+          "county": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "town": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "physicalAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phoneNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
           }
         }
       },
@@ -5877,6 +7579,120 @@
           },
           "emailEnabled": {
             "type": "boolean"
+          }
+        }
+      },
+      "CreateFeeRuleCommand": {
+        "required": [
+          "transactionType",
+          "channel",
+          "productCode",
+          "minAmount",
+          "maxAmount",
+          "chargeType",
+          "fixedAmount",
+          "rateBps",
+          "minCharge",
+          "maxCharge",
+          "tiers",
+          "feeIncomeGlAccountCode",
+          "supersedesRuleId"
+        ],
+        "type": "object",
+        "properties": {
+          "transactionType": {
+            "$ref": "#/components/schemas/FeeTransactionType"
+          },
+          "channel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FeeChannel"
+              }
+            ]
+          },
+          "productCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "minAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maxAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "chargeType": {
+            "$ref": "#/components/schemas/FeeChargeType"
+          },
+          "fixedAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "rateBps": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "minCharge": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maxCharge": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "tiers": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/FeeTierInput"
+            }
+          },
+          "feeIncomeGlAccountCode": {
+            "type": "string"
+          },
+          "supersedesRuleId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -6252,41 +8068,19 @@
           }
         }
       },
-      "CreateUserRequest": {
+      "CreateShareListingRequest": {
         "required": [
-          "userName",
-          "email",
-          "displayName",
-          "phoneNumber",
-          "password",
-          "roleIds"
+          "amount"
         ],
         "type": "object",
         "properties": {
-          "userName": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "displayName": {
-            "type": "string"
-          },
-          "phoneNumber": {
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
-              "null",
+              "number",
               "string"
-            ]
-          },
-          "password": {
-            "type": "string"
-          },
-          "roleIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
+            ],
+            "format": "double"
           }
         }
       },
@@ -6443,6 +8237,31 @@
           }
         }
       },
+      "DemoNotice": {
+        "required": [
+          "message",
+          "purchaseUrl",
+          "contactEmail"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "purchaseUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "contactEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "DepositChannel": {
         "enum": [
           "Cash",
@@ -6490,7 +8309,8 @@
           "journalReference",
           "accountNumber",
           "amount",
-          "newBalance"
+          "newBalance",
+          "fee"
         ],
         "type": "object",
         "properties": {
@@ -6513,6 +8333,14 @@
             "format": "double"
           },
           "newBalance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fee": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "number",
@@ -6901,6 +8729,296 @@
             "type": "string"
           }
         }
+      },
+      "FeeChannel": {
+        "enum": [
+          "Cash",
+          "MPesa",
+          "AirtelMoney",
+          "BankTransfer",
+          "CheckOff",
+          null
+        ]
+      },
+      "FeeChargeType": {
+        "enum": [
+          "Fixed",
+          "Percentage",
+          "Tiered"
+        ]
+      },
+      "FeeQuoteRequest": {
+        "required": [
+          "transactionType",
+          "channel",
+          "productCode",
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "transactionType": {
+            "$ref": "#/components/schemas/FeeTransactionType"
+          },
+          "channel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FeeChannel"
+              }
+            ]
+          },
+          "productCode": {
+            "type": "string"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "FeeQuoteResponse": {
+        "required": [
+          "fee",
+          "basis",
+          "ruleId"
+        ],
+        "type": "object",
+        "properties": {
+          "fee": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "basis": {
+            "type": "string"
+          },
+          "ruleId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "FeeRuleResponse": {
+        "required": [
+          "id",
+          "transactionType",
+          "channel",
+          "productCode",
+          "minAmount",
+          "maxAmount",
+          "chargeType",
+          "fixedAmount",
+          "rateBps",
+          "minCharge",
+          "maxCharge",
+          "tiers",
+          "chargeDescription",
+          "feeIncomeGlAccountCode",
+          "feeIncomeSegment",
+          "status",
+          "supersedesRuleId",
+          "createdByUserId",
+          "createdAt",
+          "decidedByUserId",
+          "decidedAt",
+          "rejectionReason",
+          "deactivatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "transactionType": {
+            "$ref": "#/components/schemas/FeeTransactionType"
+          },
+          "channel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FeeChannel"
+              }
+            ]
+          },
+          "productCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "minAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maxAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "chargeType": {
+            "$ref": "#/components/schemas/FeeChargeType"
+          },
+          "fixedAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "rateBps": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "minCharge": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maxCharge": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "tiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeeTierInput"
+            }
+          },
+          "chargeDescription": {
+            "type": "string"
+          },
+          "feeIncomeGlAccountCode": {
+            "type": "string"
+          },
+          "feeIncomeSegment": {
+            "$ref": "#/components/schemas/Segment"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FeeRuleStatus"
+          },
+          "supersedesRuleId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "decidedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "rejectionReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deactivatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "FeeRuleStatus": {
+        "enum": [
+          "PendingApproval",
+          "Active",
+          "Inactive",
+          "Rejected"
+        ]
+      },
+      "FeeTierInput": {
+        "required": [
+          "upTo",
+          "charge"
+        ],
+        "type": "object",
+        "properties": {
+          "upTo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "charge": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "FeeTransactionType": {
+        "enum": [
+          "Deposit",
+          "Withdrawal",
+          "BalanceEnquiry"
+        ]
       },
       "FinancialPosition": {
         "required": [
@@ -7410,6 +9528,47 @@
           "Flat"
         ]
       },
+      "InviteUserRequest": {
+        "required": [
+          "userName",
+          "email",
+          "displayName",
+          "phoneNumber",
+          "roleIds"
+        ],
+        "type": "object",
+        "properties": {
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "roleIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "JournalEntryStatus": {
         "enum": [
           "PendingApproval",
@@ -7527,6 +9686,7 @@
           "rejectionReason",
           "reversalOfEntryId",
           "reversedByEntryId",
+          "branchId",
           "lines"
         ],
         "type": "object",
@@ -7595,6 +9755,13 @@
             "format": "uuid"
           },
           "reversedByEntryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "branchId": {
             "type": [
               "null",
               "string"
@@ -8003,6 +10170,13 @@
           "Rejected"
         ]
       },
+      "LoanCategory": {
+        "enum": [
+          "Fosa",
+          "Bosa",
+          "Msme"
+        ]
+      },
       "LoanListItem": {
         "required": [
           "id",
@@ -8065,6 +10239,21 @@
           }
         }
       },
+      "LoanProductListingRequest": {
+        "required": [
+          "category",
+          "listing"
+        ],
+        "type": "object",
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/LoanCategory"
+          },
+          "listing": {
+            "$ref": "#/components/schemas/ProductListing"
+          }
+        }
+      },
       "LoanProductResponse": {
         "required": [
           "id",
@@ -8092,7 +10281,9 @@
           "committeeThreshold",
           "committeeApprovalsRequired",
           "gracePeriodDays",
-          "isActive"
+          "isActive",
+          "category",
+          "listing"
         ],
         "type": "object",
         "properties": {
@@ -8237,6 +10428,12 @@
           },
           "isActive": {
             "type": "boolean"
+          },
+          "category": {
+            "$ref": "#/components/schemas/LoanCategory"
+          },
+          "listing": {
+            "$ref": "#/components/schemas/ProductListing"
           }
         }
       },
@@ -8574,7 +10771,8 @@
           "nationalIdNumber",
           "phoneNumber",
           "kycStatus",
-          "joinedAt"
+          "joinedAt",
+          "branchId"
         ],
         "type": "object",
         "properties": {
@@ -8600,6 +10798,13 @@
           "joinedAt": {
             "type": "string",
             "format": "date"
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -8763,7 +10968,8 @@
           "exitApprovedByUserId",
           "exitedAt",
           "exitSettlementJson",
-          "selfServiceEnabled"
+          "selfServiceEnabled",
+          "branchId"
         ],
         "type": "object",
         "properties": {
@@ -8871,92 +11077,13 @@
           },
           "selfServiceEnabled": {
             "type": "boolean"
-          }
-        }
-      },
-      "MemberSavingsSummary": {
-        "required": [
-          "memberId",
-          "bosaDeposits",
-          "shares",
-          "fosaBalance",
-          "fixedDeposits",
-          "monthsWithContributions",
-          "firstContributionDate",
-          "fosaAccountNumber",
-          "bosaDepositAccountNumber",
-          "sharesAccountNumber"
-        ],
-        "type": "object",
-        "properties": {
-          "memberId": {
-            "type": "string",
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
-          },
-          "bosaDeposits": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "shares": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "fosaBalance": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "fixedDeposits": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "monthsWithContributions": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "firstContributionDate": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "fosaAccountNumber": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "bosaDepositAccountNumber": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "sharesAccountNumber": {
-            "type": [
-              "null",
-              "string"
-            ]
           }
         }
       },
@@ -9015,6 +11142,74 @@
           "Email"
         ]
       },
+      "MyDividendResponse": {
+        "required": [
+          "financialYear",
+          "status",
+          "shareDividend",
+          "depositInterest",
+          "withholdingTax",
+          "netPayable",
+          "isPaid",
+          "paidAt"
+        ],
+        "type": "object",
+        "properties": {
+          "financialYear": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DividendStatus"
+          },
+          "shareDividend": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "depositInterest": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "withholdingTax": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "netPayable": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isPaid": {
+            "type": "boolean"
+          },
+          "paidAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "MyProfileResponse": {
         "required": [
           "id",
@@ -9056,6 +11251,239 @@
           },
           "nextOfKin": {
             "$ref": "#/components/schemas/NextOfKinDto"
+          }
+        }
+      },
+      "MySavingsAccountResponse": {
+        "required": [
+          "id",
+          "accountNumber",
+          "memberId",
+          "productCode",
+          "kind",
+          "segment",
+          "status",
+          "openedAt",
+          "balance",
+          "heldAmount",
+          "availableBalance",
+          "principal",
+          "termMonths",
+          "interestRateBps",
+          "maturityDate",
+          "payoutAccountNumber",
+          "balanceLocked",
+          "balanceEnquiryFee",
+          "balanceVisibleUntil"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "memberId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productCode": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ProductKind"
+          },
+          "segment": {
+            "$ref": "#/components/schemas/Segment"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SavingsAccountStatus"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "balance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "heldAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "availableBalance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "principal": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "termMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "interestRateBps": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "maturityDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "payoutAccountNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "balanceLocked": {
+            "type": "boolean"
+          },
+          "balanceEnquiryFee": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "balanceVisibleUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "MySavingsSummaryResponse": {
+        "required": [
+          "memberId",
+          "bosaDeposits",
+          "shares",
+          "fosaBalance",
+          "fixedDeposits",
+          "monthsWithContributions",
+          "firstContributionDate",
+          "fosaAccountNumber",
+          "bosaDepositAccountNumber",
+          "sharesAccountNumber",
+          "hasLockedBalances"
+        ],
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bosaDeposits": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "shares": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fosaBalance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fixedDeposits": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "monthsWithContributions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "firstContributionDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "fosaAccountNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bosaDepositAccountNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sharesAccountNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "hasLockedBalances": {
+            "type": "boolean"
           }
         }
       },
@@ -9978,6 +12406,54 @@
           "FixedDeposit"
         ]
       },
+      "ProductListing": {
+        "required": [
+          "showOnPublicSite",
+          "displayOrder",
+          "features",
+          "requirements",
+          "amountNote",
+          "applicationFormUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "showOnPublicSite": {
+            "type": "boolean"
+          },
+          "displayOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "amountNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "applicationFormUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ProductResponse": {
         "required": [
           "id",
@@ -9998,7 +12474,8 @@
           "interestRateBps",
           "interestExpenseGlAccountCode",
           "termMonths",
-          "isActive"
+          "isActive",
+          "listing"
         ],
         "type": "object",
         "properties": {
@@ -10104,6 +12581,9 @@
           },
           "isActive": {
             "type": "boolean"
+          },
+          "listing": {
+            "$ref": "#/components/schemas/ProductListing"
           }
         }
       },
@@ -10312,6 +12792,60 @@
           "Rejected"
         ]
       },
+      "PublicBranch": {
+        "required": [
+          "code",
+          "name",
+          "isHeadOffice",
+          "county",
+          "town",
+          "physicalAddress",
+          "phoneNumber",
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isHeadOffice": {
+            "type": "boolean"
+          },
+          "county": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "town": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "physicalAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phoneNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "PublicLoanProduct": {
         "required": [
           "code",
@@ -10327,7 +12861,13 @@
           "depositMultiplier",
           "minMembershipMonths",
           "requiresGuarantors",
-          "minGuarantors"
+          "minGuarantors",
+          "category",
+          "features",
+          "requirements",
+          "amountNote",
+          "applicationFormUrl",
+          "displayOrder"
         ],
         "type": "object",
         "properties": {
@@ -10415,6 +12955,41 @@
               "string"
             ],
             "format": "int32"
+          },
+          "category": {
+            "$ref": "#/components/schemas/LoanCategory"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "amountNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "applicationFormUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -10430,7 +13005,12 @@
           "allowsWithdrawals",
           "withdrawalNoticeDays",
           "interestRateBps",
-          "termMonths"
+          "termMonths",
+          "features",
+          "requirements",
+          "amountNote",
+          "applicationFormUrl",
+          "displayOrder"
         ],
         "type": "object",
         "properties": {
@@ -10495,6 +13075,78 @@
               "string"
             ],
             "format": "int32"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "amountNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "applicationFormUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PublicServiceResponse": {
+        "required": [
+          "id",
+          "name",
+          "description",
+          "icon",
+          "displayOrder",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "icon": {
+            "type": "string"
+          },
+          "displayOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
           }
         }
       },
@@ -10666,6 +13318,20 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "RejectInvitationRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -10849,13 +13515,21 @@
           }
         }
       },
-      "ResetPasswordRequest": {
+      "RequestOtpRequest": {
         "required": [
-          "newPassword"
+          "phone",
+          "pin",
+          "deviceId"
         ],
         "type": "object",
         "properties": {
-          "newPassword": {
+          "phone": {
+            "type": "string"
+          },
+          "pin": {
+            "type": "string"
+          },
+          "deviceId": {
             "type": "string"
           }
         }
@@ -10896,6 +13570,49 @@
           "Submitted",
           "Withdrawn"
         ]
+      },
+      "RevealBalanceRequest": {
+        "required": [
+          "idempotencyKey"
+        ],
+        "type": "object",
+        "properties": {
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "RevealBalanceResponse": {
+        "required": [
+          "charged",
+          "fee",
+          "visibleUntil",
+          "account"
+        ],
+        "type": "object",
+        "properties": {
+          "charged": {
+            "type": "boolean"
+          },
+          "fee": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "visibleUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "account": {
+            "$ref": "#/components/schemas/MySavingsAccountResponse"
+          }
+        }
       },
       "ReverseJournalRequest": {
         "required": [
@@ -11005,6 +13722,73 @@
           }
         }
       },
+      "SaveBranchRequest": {
+        "required": [
+          "code",
+          "name",
+          "isHeadOffice",
+          "county",
+          "town",
+          "physicalAddress",
+          "phoneNumber",
+          "email",
+          "displayOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isHeadOffice": {
+            "type": "boolean"
+          },
+          "county": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "town": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "physicalAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phoneNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
       "SaveMemberRequest": {
         "required": [
           "details",
@@ -11017,6 +13801,48 @@
           },
           "nextOfKin": {
             "$ref": "#/components/schemas/NextOfKinDto"
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "SavePublicServiceRequest": {
+        "required": [
+          "name",
+          "description",
+          "icon",
+          "displayOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "icon": {
+            "type": "string"
+          },
+          "displayOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
           }
         }
       },
@@ -11352,6 +14178,59 @@
           }
         }
       },
+      "SelfWithdrawalRequest": {
+        "required": [
+          "accountNumber",
+          "amount",
+          "channel",
+          "destination",
+          "narrative"
+        ],
+        "type": "object",
+        "properties": {
+          "accountNumber": {
+            "type": "string"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/PayoutChannel"
+          },
+          "destination": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "narrative": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SetMemberBranchRequest": {
+        "required": [
+          "branchId"
+        ],
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "SetProvisioningConfigRequest": {
         "required": [
           "buckets",
@@ -11416,6 +14295,21 @@
           }
         }
       },
+      "SetUserBranchRequest": {
+        "required": [
+          "branchId"
+        ],
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "SetUserRolesRequest": {
         "required": [
           "roleIds"
@@ -11430,6 +14324,231 @@
             }
           }
         }
+      },
+      "ShareListingResponse": {
+        "required": [
+          "id",
+          "sellerMemberId",
+          "sellerSharesAccountNumber",
+          "amount",
+          "status",
+          "listedAt",
+          "buyerMemberId",
+          "buyerSharesAccountNumber",
+          "claimedAt",
+          "decidedByUserId",
+          "decidedAt",
+          "rejectionReason",
+          "journalReference"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sellerMemberId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sellerSharesAccountNumber": {
+            "type": "string"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ShareListingStatus"
+          },
+          "listedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "buyerMemberId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "buyerSharesAccountNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "claimedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "decidedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "decidedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "rejectionReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "journalReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ShareListingStatus": {
+        "enum": [
+          "Open",
+          "PendingApproval",
+          "Approved",
+          "Rejected",
+          "Cancelled"
+        ]
+      },
+      "StaffInvitationResponse": {
+        "required": [
+          "id",
+          "userName",
+          "email",
+          "displayName",
+          "phoneNumber",
+          "roleIds",
+          "status",
+          "proposedByUserId",
+          "proposedAt",
+          "decidedByUserId",
+          "decidedAt",
+          "rejectionReason",
+          "userId",
+          "lastSentAt",
+          "acceptedAt",
+          "branchId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "roleIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/StaffInvitationStatus"
+          },
+          "proposedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "proposedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "decidedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "rejectionReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "userId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "lastSentAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "acceptedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "StaffInvitationStatus": {
+        "enum": [
+          "PendingApproval",
+          "Sent",
+          "Accepted",
+          "Rejected",
+          "Revoked"
+        ]
+      },
+      "StaffUserStatus": {
+        "enum": [
+          "Invited",
+          "Active",
+          "Deactivated"
+        ]
       },
       "StatementLine": {
         "required": [
@@ -11691,7 +14810,11 @@
           "logoUrl",
           "tagline",
           "supportEmail",
-          "supportPhone"
+          "supportPhone",
+          "faviconUrl",
+          "lightModeLogoUrl",
+          "darkModeLogoUrl",
+          "demo"
         ],
         "type": "object",
         "properties": {
@@ -11727,6 +14850,34 @@
           },
           "supportPhone": {
             "type": "string"
+          },
+          "faviconUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lightModeLogoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "darkModeLogoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "demo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DemoNotice"
+              }
+            ]
           }
         }
       },
@@ -11890,6 +15041,24 @@
           },
           "supportPhone": {
             "type": "string"
+          },
+          "faviconUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lightModeLogoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "darkModeLogoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -12127,7 +15296,11 @@
           "isActive",
           "mustChangePassword",
           "lastLoginAt",
-          "roleIds"
+          "roleIds",
+          "status",
+          "mfaEnabled",
+          "activatedAt",
+          "branchId"
         ],
         "type": "object",
         "properties": {
@@ -12169,6 +15342,37 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "status": {
+            "$ref": "#/components/schemas/StaffUserStatus"
+          },
+          "mfaEnabled": {
+            "type": "boolean"
+          },
+          "activatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "VerifyPinRequest": {
+        "required": [
+          "pin"
+        ],
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": "string"
           }
         }
       },
@@ -12341,10 +15545,10 @@
   },
   "tags": [
     {
-      "name": "Self-service"
+      "name": "Public"
     },
     {
-      "name": "Public"
+      "name": "Self-service"
     },
     {
       "name": "Provider webhooks"
@@ -12375,6 +15579,12 @@
     },
     {
       "name": "Savings accounts"
+    },
+    {
+      "name": "Fee matrix"
+    },
+    {
+      "name": "Shares marketplace"
     },
     {
       "name": "Withdrawals"

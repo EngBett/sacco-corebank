@@ -6,9 +6,11 @@ using Sacco.Shared.Tenancy;
 
 namespace Sacco.Shared.Auth;
 
-public sealed class PermissionRequirement(string permission) : IAuthorizationRequirement
+/// <summary>Satisfied when the caller holds any one of <see cref="Permissions"/> (usually just one).</summary>
+public sealed class PermissionRequirement(params string[] permissions) : IAuthorizationRequirement
 {
-    public string Permission { get; } = permission;
+    public IReadOnlyList<string> Permissions { get; } = permissions;
+    public string Permission => Permissions[0];
 }
 
 /// <summary>
@@ -25,7 +27,7 @@ public sealed class PermissionAuthorizationHandler(
         if (!currentUser.IsAuthenticated || !tenant.HasTenant) return;
 
         var permissions = await resolver.GetPermissionsAsync(tenant.TenantId, currentUser.UserId, CancellationToken.None);
-        if (permissions.Contains(requirement.Permission))
+        if (requirement.Permissions.Any(permissions.Contains))
             context.Succeed(requirement);
     }
 }
@@ -42,13 +44,17 @@ public sealed class PermissionPolicyProvider(IOptions<AuthorizationOptions> opti
     public Task<AuthorizationPolicy> GetDefaultPolicyAsync() => _fallback.GetDefaultPolicyAsync();
     public Task<AuthorizationPolicy?> GetFallbackPolicyAsync() => _fallback.GetFallbackPolicyAsync();
 
+    /// <summary>Separates alternatives in a policy name built by <c>RequireAnyPermission</c>.</summary>
+    public const char AnySeparator = '|';
+
     public async Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
     {
-        if (Permissions.IsKnown(policyName))
+        var names = policyName.Split(AnySeparator);
+        if (names.All(Permissions.IsKnown))
         {
             return new AuthorizationPolicyBuilder()
                 .RequireAuthenticatedUser()
-                .AddRequirements(new PermissionRequirement(policyName))
+                .AddRequirements(new PermissionRequirement(names))
                 .Build();
         }
         return await _fallback.GetPolicyAsync(policyName);
@@ -72,5 +78,15 @@ public static class PermissionAuthorizationExtensions
         if (!Permissions.IsKnown(permission))
             throw new ArgumentException($"'{permission}' is not a registered permission. Add it to Permissions.All.", nameof(permission));
         return builder.RequireAuthorization(permission);
+    }
+
+    /// <summary>Requires the caller to hold at least one of the given permissions in the current tenant.</summary>
+    public static TBuilder RequireAnyPermission<TBuilder>(this TBuilder builder, params string[] permissions)
+        where TBuilder : IEndpointConventionBuilder
+    {
+        foreach (var permission in permissions)
+            if (!Permissions.IsKnown(permission))
+                throw new ArgumentException($"'{permission}' is not a registered permission. Add it to Permissions.All.", nameof(permissions));
+        return builder.RequireAuthorization(string.Join(PermissionPolicyProvider.AnySeparator, permissions));
     }
 }

@@ -27,7 +27,7 @@ public class NcbaPaymentRequest
     [JsonPropertyName("TranType")]
     public string TranType { get; set; } = string.Empty;
 
-    /// <summary>Pochipay reference — max 12 characters.</summary>
+    /// <summary>Caller's own reference — max 12 characters.</summary>
     [JsonPropertyName("Reference")]
     public string Reference { get; set; } = string.Empty;
 

@@ -1,0 +1,51 @@
+name: sacco_member
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  flutter_riverpod: ^2.6.1
+  dio: ^5.7.0
+  flutter_secure_storage: ^9.2.2
+  go_router: ^14.6.2
+  get_it: ^8.0.2
+  intl: ^0.19.0
+  jwt_decoder: ^2.0.1
+  cupertino_icons: ^1.0.8
+  local_auth: ^2.3.0
+  uuid: ^4.5.1
+  pin_code_fields: ^8.0.1
+  google_fonts: ^6.2.1
+  # Pinned: 1.1.x calls Matrix4.translateByDouble, which the vector_math bundled with Flutter 3.32 lacks.
+  fl_chart: 1.0.0 # MIT
+  # 7.x needs androidx.core 1.18 / compileSdk 36.
+  connectivity_plus: ^6.1.4 # BSD-3
+  # Base names are the bold style; use the `_copy` names for the linear icons the app is drawn with.
+  iconsax_flutter: ^1.0.1 # BSD-3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  # Generates the launcher icons from assets/branding (`dart run flutter_launcher_icons`). MIT.
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+
+# Icodeio SACCO app icon: the white "L" mark on Icodeio maroon. Re-run `dart run flutter_launcher_icons` after changing
+# either image. A SACCO building its own copy of the app swaps these two files and the background colour.
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/branding/app_icon.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "#8B0D32"
+  adaptive_icon_foreground: "assets/branding/app_icon_foreground.png"
+  min_sdk_android: 21

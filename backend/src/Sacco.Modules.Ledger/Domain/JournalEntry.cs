@@ -34,12 +34,15 @@ public class JournalEntry : TenantEntity
     public DateTimeOffset? PostedAt { get; private set; }
     public string? RejectionReason { get; private set; }
     public Guid? ReversalOfEntryId { get; private set; }
+
+    /// <summary>Office the posting belongs to (ADR 0018). Null on entries raised before branches existed, or by background jobs.</summary>
+    public Guid? BranchId { get; private set; }
     public Guid? ReversedByEntryId { get; private set; }
     public IReadOnlyList<JournalLine> Lines => _lines;
 
     /// <summary>Creates a validated, balanced entry. Does not touch balances — the posting engine does that.</summary>
     public static JournalEntry Create(Guid id, Guid tenantId, string reference, string description, DateOnly valueDate, string source,
-        Guid initiatedByUserId, DateTimeOffset now, IReadOnlyList<JournalLineDraft> drafts, JournalEntryStatus initialStatus, Guid? reversalOfEntryId = null)
+        Guid initiatedByUserId, DateTimeOffset now, IReadOnlyList<JournalLineDraft> drafts, JournalEntryStatus initialStatus, Guid? reversalOfEntryId = null, Guid? branchId = null)
     {
         if (string.IsNullOrWhiteSpace(reference))
             throw new DomainRuleException("ledger.journal.reference_required", "A journal reference is required.");
@@ -86,6 +89,7 @@ public class JournalEntry : TenantEntity
             Description = description.Trim(),
             ValueDate = valueDate,
             Source = source,
+            BranchId = branchId,
             Status = initialStatus,
             TotalAmount = debits,
             InitiatedByUserId = initiatedByUserId,

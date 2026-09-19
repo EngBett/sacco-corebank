@@ -113,6 +113,10 @@ namespace Sacco.Migrations.Ledger
                         .HasColumnType("uuid")
                         .HasColumnName("approved_by_user_id");
 
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -180,6 +184,9 @@ namespace Sacco.Migrations.Ledger
 
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_journal_entries_tenant_id");
+
+                    b.HasIndex("TenantId", "BranchId")
+                        .HasDatabaseName("ix_journal_entries_tenant_id_branch_id");
 
                     b.HasIndex("TenantId", "Reference")
                         .IsUnique()

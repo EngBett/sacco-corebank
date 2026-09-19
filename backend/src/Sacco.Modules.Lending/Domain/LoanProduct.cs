@@ -5,6 +5,10 @@ namespace Sacco.Modules.Lending.Domain;
 
 public enum InterestMethod { ReducingBalance = 1, Flat = 2 }
 
+/// <summary>How the SACCO groups the loan for members (and on the public site): salary-based FOSA loans, deposit-based
+/// BOSA loans, or micro, small and medium enterprise (MSME) loans for groups, traders and farmers.</summary>
+public enum LoanCategory { Fosa = 1, Bosa = 2, Msme = 3 }
+
 /// <summary>Loan product. Segment, GL mapping, eligibility, guarantee and approval policy are all configuration.</summary>
 public class LoanProduct : TenantEntity
 {
@@ -36,6 +40,19 @@ public class LoanProduct : TenantEntity
     public decimal CommitteeThreshold { get; private set; }
     public int CommitteeApprovalsRequired { get; private set; }
     public int GracePeriodDays { get; private set; }
+    /// <summary>Defaults to the segment (FOSA/BOSA); MSME loans are set explicitly.</summary>
+    public LoanCategory Category { get; private set; }
+
+    /// <summary>How the product appears on the public website (features, requirements, order, visibility).</summary>
+    public PublicListing Listing { get; private set; } = new();
+
+    public void SetListing(LoanCategory category, PublicListing listing)
+    {
+        if (!Enum.IsDefined(category)) throw new DomainRuleException("loans.product.category_invalid", "Choose FOSA, BOSA or MSME.");
+        Category = category;
+        Listing = listing;
+    }
+
     public bool IsActive { get; private set; }
 
     public static LoanProduct Create(Guid id, Guid tenantId, string code, string name, string? description, Segment segment,
@@ -51,6 +68,7 @@ public class LoanProduct : TenantEntity
         return new LoanProduct
         {
             Id = id, TenantId = tenantId, Code = code.Trim().ToUpperInvariant(), Name = name.Trim(), Description = description, Segment = segment,
+            Category = segment == Segment.Fosa ? LoanCategory.Fosa : LoanCategory.Bosa,
             ControlGlAccountCode = controlGl, InterestIncomeGlAccountCode = interestIncomeGl, InterestReceivableGlAccountCode = interestReceivableGl, FeeIncomeGlAccountCode = feeIncomeGl,
             ProvisionGlAccountCode = provisionGl, ProvisionExpenseGlAccountCode = provisionExpenseGl,
             InterestRateBps = rateBps, InterestMethod = method, MinAmount = minAmount, MaxAmount = maxAmount, MinTermMonths = minTerm, MaxTermMonths = maxTerm,

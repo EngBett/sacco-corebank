@@ -19,6 +19,10 @@ public class WithdrawalRequest : TenantEntity
     public Guid MemberId { get; private set; }
     public decimal Amount { get; private set; }
     public decimal Fee { get; private set; }
+    /// <summary>Where the fee is credited, fixed at request time so a later tariff change can't alter a held withdrawal. Null on requests made before the fee matrix (ADR 0015).</summary>
+    public string? FeeGlAccountCode { get; private set; }
+    public Segment? FeeSegment { get; private set; }
+    public Guid? FeeRuleId { get; private set; }
     public PayoutChannel Channel { get; private set; }
     /// <summary>Destination for non-cash payouts (phone number / bank account).</summary>
     public string? PayoutDestination { get; private set; }
@@ -35,7 +39,7 @@ public class WithdrawalRequest : TenantEntity
     public string? Narrative { get; private set; }
     public decimal TotalDebit => Amount + Fee;
 
-    public static WithdrawalRequest Create(Guid id, Guid tenantId, SavingsAccount account, SavingsProduct product, decimal amount, PayoutChannel channel, string? destination, string? narrative, Guid requestedBy, DateTimeOffset now, DateOnly today)
+    public static WithdrawalRequest Create(Guid id, Guid tenantId, SavingsAccount account, SavingsProduct product, decimal amount, FeeCharge fee, PayoutChannel channel, string? destination, string? narrative, Guid requestedBy, DateTimeOffset now, DateOnly today)
     {
         if (!product.AllowsWithdrawals) throw new DomainRuleException("savings.withdrawal.not_allowed", $"{product.Name} does not allow withdrawals.");
         if (account.Status != SavingsAccountStatus.Active) throw new DomainRuleException("savings.account.not_active", $"{account.AccountNumber} is {account.Status}.");
@@ -44,7 +48,8 @@ public class WithdrawalRequest : TenantEntity
             throw new DomainRuleException("savings.withdrawal.destination_required", "A payout destination is required for non-cash withdrawals.");
         return new WithdrawalRequest
         {
-            Id = id, TenantId = tenantId, AccountNumber = account.AccountNumber, MemberId = account.MemberId, Amount = amount, Fee = product.WithdrawalFee,
+            Id = id, TenantId = tenantId, AccountNumber = account.AccountNumber, MemberId = account.MemberId, Amount = amount,
+            Fee = fee.Amount, FeeGlAccountCode = fee.GlAccountCode, FeeSegment = fee.Amount > 0 ? fee.Segment : null, FeeRuleId = fee.RuleId,
             Channel = channel, PayoutDestination = destination, Status = WithdrawalStatus.PendingApproval, RequestedByUserId = requestedBy, RequestedAt = now,
             NoticeExpiresOn = today.AddDays(product.WithdrawalNoticeDays), Narrative = narrative,
         };

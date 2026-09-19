@@ -4,6 +4,70 @@
  */
 
 export interface paths {
+    "/api/public/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListPublicServices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/public/branches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListPublicBranches"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/auth/otp/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RequestMemberLoginOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/auth/pin/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["VerifyMyPin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/self/statements/{accountNumber}": {
         parameters: {
             query?: never;
@@ -148,6 +212,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/branches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListBranches"];
+        put?: never;
+        post: operations["CreateBranch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/branches/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateBranch"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/public-services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListPublicServicesAdmin"];
+        put?: never;
+        post: operations["CreatePublicService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/public-services/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdatePublicService"];
+        post?: never;
+        delete: operations["DeletePublicService"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/tenant/branding": {
         parameters: {
             query?: never;
@@ -172,6 +300,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["GetAuditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/audit-log/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ExportAuditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/audit-log/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["VerifyAuditLog"];
         put?: never;
         post?: never;
         delete?: never;
@@ -269,7 +429,7 @@ export interface paths {
         };
         get: operations["ListUsers"];
         put?: never;
-        post: operations["CreateUser"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -285,6 +445,102 @@ export interface paths {
         };
         get: operations["GetUser"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListStaffInvitations"];
+        put?: never;
+        post: operations["InviteStaffUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/invitations/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ApproveStaffInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/invitations/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RejectStaffInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/invitations/{id}/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ResendStaffInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/invitations/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RevokeStaffInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/branch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["SetUserBranch"];
         post?: never;
         delete?: never;
         options?: never;
@@ -340,7 +596,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/users/{id}/reset-password": {
+    "/api/admin/users/{id}/send-password-reset": {
         parameters: {
             query?: never;
             header?: never;
@@ -349,7 +605,23 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["ResetUserPassword"];
+        post: operations["SendUserPasswordReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/reset-mfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ResetUserMfa"];
         delete?: never;
         options?: never;
         head?: never;
@@ -676,6 +948,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/members/{id}/branch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["SetMemberBranch"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/members/{id}/documents": {
         parameters: {
             query?: never;
@@ -852,6 +1140,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/savings/products/{code}/listing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateSavingsProductListing"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/savings/accounts": {
         parameters: {
             query?: never;
@@ -958,6 +1262,326 @@ export interface paths {
         get: operations["GetMySavingsSummary"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/accounts/{accountNumber}/balance-enquiries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RevealMyBalance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/fees/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["QuoteMyFee"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/withdrawals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMyWithdrawals"];
+        put?: never;
+        post: operations["RequestMyWithdrawal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/dividends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMyDividends"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/shares-marketplace/listings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ListMySharesForSale"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/shares-marketplace/listings/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BrowseOpenShareListings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/shares-marketplace/listings/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMyShareListings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/shares-marketplace/listings/{id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ClaimShareListing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/self/shares-marketplace/listings/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CancelMyShareListing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/savings/fees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListFeeRules"];
+        put?: never;
+        post: operations["CreateFeeRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/savings/fees/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetFeeRule"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/savings/fees/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ApproveFeeRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/savings/fees/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RejectFeeRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/savings/fees/{id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DeactivateFeeRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/savings/fees/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["QuoteFee"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/savings/shares-marketplace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListShareListings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/savings/shares-marketplace/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListPendingShareListings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/savings/shares-marketplace/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetShareListing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/savings/shares-marketplace/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ApproveShareListing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/savings/shares-marketplace/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RejectShareListing"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1181,6 +1805,22 @@ export interface paths {
         };
         get?: never;
         put: operations["UpdateLoanProduct"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/products/{code}/listing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateLoanProductListing"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2345,6 +2985,21 @@ export interface components {
         ApproveExitRequest: {
             channel: components["schemas"]["ExitPayoutChannel"];
         };
+        AuditChainCheck: {
+            /** Format: int32 */
+            checked: number | string;
+            intact: boolean;
+            /** Format: uuid */
+            firstBrokenEntryId: null | string;
+            /** Format: date-time */
+            firstBrokenAt: null | string;
+            problem: null | string;
+            /**
+             * Format: int32
+             * @default 0
+             */
+            unchained: number | string;
+        };
         AuditLogResponse: {
             /** Format: uuid */
             id: string;
@@ -2357,6 +3012,30 @@ export interface components {
             actorUserId: string;
             details: null | string;
             correlationId: null | string;
+            actorName: null | string;
+            outcome: components["schemas"]["AuditOutcome"];
+            ipAddress: null | string;
+            userAgent: null | string;
+            /** Format: uuid */
+            branchId: null | string;
+            hash: string;
+        };
+        /** @enum {unknown} */
+        AuditOutcome: "Success" | "Failure" | "Denied";
+        BranchResponse: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            isHeadOffice: boolean;
+            county: null | string;
+            town: null | string;
+            physicalAddress: null | string;
+            phoneNumber: null | string;
+            email: null | string;
+            /** Format: int32 */
+            displayOrder: number | string;
+            isActive: boolean;
         };
         BureauConsentInfo: {
             required: boolean;
@@ -2391,6 +3070,28 @@ export interface components {
             emailSandbox: boolean;
             smsKindPrefixes: string[];
             emailEnabled: boolean;
+        };
+        CreateFeeRuleCommand: {
+            transactionType: components["schemas"]["FeeTransactionType"];
+            channel: null | components["schemas"]["FeeChannel"];
+            productCode: null | string;
+            /** Format: double */
+            minAmount: number | string;
+            /** Format: double */
+            maxAmount: null | number | string;
+            chargeType: components["schemas"]["FeeChargeType"];
+            /** Format: double */
+            fixedAmount: null | number | string;
+            /** Format: int32 */
+            rateBps: null | number | string;
+            /** Format: double */
+            minCharge: null | number | string;
+            /** Format: double */
+            maxCharge: null | number | string;
+            tiers: null | components["schemas"]["FeeTierInput"][];
+            feeIncomeGlAccountCode: string;
+            /** Format: uuid */
+            supersedesRuleId: null | string;
         };
         CreateGlAccountRequest: {
             code: string;
@@ -2474,13 +3175,9 @@ export interface components {
             /** Format: int32 */
             termMonths: null | number | string;
         };
-        CreateUserRequest: {
-            userName: string;
-            email: string;
-            displayName: string;
-            phoneNumber: null | string;
-            password: string;
-            roleIds: string[];
+        CreateShareListingRequest: {
+            /** Format: double */
+            amount: number | string;
         };
         CreditScoreResponse: {
             /** Format: uuid */
@@ -2522,6 +3219,11 @@ export interface components {
             /** Format: int32 */
             depositRateBps: number | string;
         };
+        DemoNotice: {
+            message: string;
+            purchaseUrl: null | string;
+            contactEmail: null | string;
+        };
         /** @enum {unknown} */
         DepositChannel: "Cash" | "MPesa" | "AirtelMoney" | "BankTransfer" | "CheckOff" | "Internal";
         DepositRequest: {
@@ -2540,6 +3242,8 @@ export interface components {
             amount: number | string;
             /** Format: double */
             newBalance: number | string;
+            /** Format: double */
+            fee: number | string;
         };
         DigestResult: {
             sent: boolean;
@@ -2632,6 +3336,72 @@ export interface components {
             maxPoints: number | string;
             note: string;
         };
+        /** @enum {unknown} */
+        FeeChannel: "Cash" | "MPesa" | "AirtelMoney" | "BankTransfer" | "CheckOff" | null;
+        /** @enum {unknown} */
+        FeeChargeType: "Fixed" | "Percentage" | "Tiered";
+        FeeQuoteRequest: {
+            transactionType: components["schemas"]["FeeTransactionType"];
+            channel: null | components["schemas"]["FeeChannel"];
+            productCode: string;
+            /** Format: double */
+            amount: number | string;
+        };
+        FeeQuoteResponse: {
+            /** Format: double */
+            fee: number | string;
+            basis: string;
+            /** Format: uuid */
+            ruleId: null | string;
+        };
+        FeeRuleResponse: {
+            /** Format: uuid */
+            id: string;
+            transactionType: components["schemas"]["FeeTransactionType"];
+            channel: null | components["schemas"]["FeeChannel"];
+            productCode: null | string;
+            /** Format: double */
+            minAmount: number | string;
+            /** Format: double */
+            maxAmount: null | number | string;
+            chargeType: components["schemas"]["FeeChargeType"];
+            /** Format: double */
+            fixedAmount: null | number | string;
+            /** Format: int32 */
+            rateBps: null | number | string;
+            /** Format: double */
+            minCharge: null | number | string;
+            /** Format: double */
+            maxCharge: null | number | string;
+            tiers: components["schemas"]["FeeTierInput"][];
+            chargeDescription: string;
+            feeIncomeGlAccountCode: string;
+            feeIncomeSegment: components["schemas"]["Segment"];
+            status: components["schemas"]["FeeRuleStatus"];
+            /** Format: uuid */
+            supersedesRuleId: null | string;
+            /** Format: uuid */
+            createdByUserId: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            decidedByUserId: null | string;
+            /** Format: date-time */
+            decidedAt: null | string;
+            rejectionReason: null | string;
+            /** Format: date-time */
+            deactivatedAt: null | string;
+        };
+        /** @enum {unknown} */
+        FeeRuleStatus: "PendingApproval" | "Active" | "Inactive" | "Rejected";
+        FeeTierInput: {
+            /** Format: double */
+            upTo: null | number | string;
+            /** Format: double */
+            charge: number | string;
+        };
+        /** @enum {unknown} */
+        FeeTransactionType: "Deposit" | "Withdrawal" | "BalanceEnquiry";
         FinancialPosition: {
             segment: null | components["schemas"]["Segment"];
             /** Format: date */
@@ -2760,6 +3530,15 @@ export interface components {
         InstallmentStatus: "Pending" | "PartiallyPaid" | "Paid";
         /** @enum {unknown} */
         InterestMethod: "ReducingBalance" | "Flat";
+        InviteUserRequest: {
+            userName: string;
+            email: string;
+            displayName: string;
+            phoneNumber: null | string;
+            roleIds: string[];
+            /** Format: uuid */
+            branchId?: null | string;
+        };
         /** @enum {unknown} */
         JournalEntryStatus: "PendingApproval" | "Posted" | "Rejected" | "Reversed";
         JournalLineRequest: {
@@ -2806,6 +3585,8 @@ export interface components {
             reversalOfEntryId: null | string;
             /** Format: uuid */
             reversedByEntryId: null | string;
+            /** Format: uuid */
+            branchId: null | string;
             lines: components["schemas"]["JournalLineResponse"][];
         };
         KycDocumentDto: {
@@ -2911,6 +3692,8 @@ export interface components {
         };
         /** @enum {unknown} */
         LoanAdjustmentStatus: "PendingApproval" | "Approved" | "Rejected";
+        /** @enum {unknown} */
+        LoanCategory: "Fosa" | "Bosa" | "Msme";
         LoanListItem: {
             /** Format: uuid */
             id: string;
@@ -2926,6 +3709,10 @@ export interface components {
             /** Format: date */
             disbursementDate: null | string;
             creditScore: null | components["schemas"]["CreditScoreSummary"];
+        };
+        LoanProductListingRequest: {
+            category: components["schemas"]["LoanCategory"];
+            listing: components["schemas"]["ProductListing"];
         };
         LoanProductResponse: {
             /** Format: uuid */
@@ -2967,6 +3754,8 @@ export interface components {
             /** Format: int32 */
             gracePeriodDays: number | string;
             isActive: boolean;
+            category: components["schemas"]["LoanCategory"];
+            listing: components["schemas"]["ProductListing"];
         };
         LoanResponse: {
             /** Format: uuid */
@@ -3050,6 +3839,8 @@ export interface components {
             kycStatus: components["schemas"]["KycStatus"];
             /** Format: date */
             joinedAt: string;
+            /** Format: uuid */
+            branchId: null | string;
         };
         MemberLoanSnapshot: {
             /** Format: uuid */
@@ -3117,25 +3908,8 @@ export interface components {
             exitedAt: null | string;
             exitSettlementJson: null | string;
             selfServiceEnabled: boolean;
-        };
-        MemberSavingsSummary: {
             /** Format: uuid */
-            memberId: string;
-            /** Format: double */
-            bosaDeposits: number | string;
-            /** Format: double */
-            shares: number | string;
-            /** Format: double */
-            fosaBalance: number | string;
-            /** Format: double */
-            fixedDeposits: number | string;
-            /** Format: int32 */
-            monthsWithContributions: number | string;
-            /** Format: date */
-            firstContributionDate: null | string;
-            fosaAccountNumber: null | string;
-            bosaDepositAccountNumber: null | string;
-            sharesAccountNumber: null | string;
+            branchId: null | string;
         };
         /** @enum {unknown} */
         MemberSource: "StaffRegistered" | "PublicApplication" | "Migrated";
@@ -3151,6 +3925,22 @@ export interface components {
         };
         /** @enum {unknown} */
         MessageChannel: "Sms" | "Email";
+        MyDividendResponse: {
+            /** Format: int32 */
+            financialYear: number | string;
+            status: components["schemas"]["DividendStatus"];
+            /** Format: double */
+            shareDividend: number | string;
+            /** Format: double */
+            depositInterest: number | string;
+            /** Format: double */
+            withholdingTax: number | string;
+            /** Format: double */
+            netPayable: number | string;
+            isPaid: boolean;
+            /** Format: date-time */
+            paidAt: null | string;
+        };
         MyProfileResponse: {
             /** Format: uuid */
             id: string;
@@ -3162,6 +3952,59 @@ export interface components {
             /** Format: date */
             joinedAt: string;
             nextOfKin: components["schemas"]["NextOfKinDto"];
+        };
+        MySavingsAccountResponse: {
+            /** Format: uuid */
+            id: string;
+            accountNumber: string;
+            /** Format: uuid */
+            memberId: string;
+            productCode: string;
+            kind: components["schemas"]["ProductKind"];
+            segment: components["schemas"]["Segment"];
+            status: components["schemas"]["SavingsAccountStatus"];
+            /** Format: date-time */
+            openedAt: string;
+            /** Format: double */
+            balance: null | number | string;
+            /** Format: double */
+            heldAmount: null | number | string;
+            /** Format: double */
+            availableBalance: null | number | string;
+            /** Format: double */
+            principal: null | number | string;
+            /** Format: int32 */
+            termMonths: null | number | string;
+            /** Format: int32 */
+            interestRateBps: null | number | string;
+            /** Format: date */
+            maturityDate: null | string;
+            payoutAccountNumber: null | string;
+            balanceLocked: boolean;
+            /** Format: double */
+            balanceEnquiryFee: null | number | string;
+            /** Format: date-time */
+            balanceVisibleUntil: null | string;
+        };
+        MySavingsSummaryResponse: {
+            /** Format: uuid */
+            memberId: string;
+            /** Format: double */
+            bosaDeposits: null | number | string;
+            /** Format: double */
+            shares: null | number | string;
+            /** Format: double */
+            fosaBalance: null | number | string;
+            /** Format: double */
+            fixedDeposits: null | number | string;
+            /** Format: int32 */
+            monthsWithContributions: number | string;
+            /** Format: date */
+            firstContributionDate: null | string;
+            fosaAccountNumber: null | string;
+            bosaDepositAccountNumber: null | string;
+            sharesAccountNumber: null | string;
+            hasLockedBalances: boolean;
         };
         NextOfKinDto: {
             name: string;
@@ -3376,6 +4219,15 @@ export interface components {
         };
         /** @enum {unknown} */
         ProductKind: "FosaCurrent" | "BosaDeposit" | "Shares" | "FixedDeposit";
+        ProductListing: {
+            showOnPublicSite: boolean;
+            /** Format: int32 */
+            displayOrder: number | string;
+            features: string[];
+            requirements: string[];
+            amountNote: null | string;
+            applicationFormUrl: null | string;
+        };
         ProductResponse: {
             /** Format: uuid */
             id: string;
@@ -3404,6 +4256,7 @@ export interface components {
             /** Format: int32 */
             termMonths: null | number | string;
             isActive: boolean;
+            listing: components["schemas"]["ProductListing"];
         };
         ProviderInfo: {
             name: string;
@@ -3458,6 +4311,16 @@ export interface components {
         };
         /** @enum {unknown} */
         ProvisioningRunStatus: "PendingApproval" | "Posted" | "Rejected";
+        PublicBranch: {
+            code: string;
+            name: string;
+            isHeadOffice: boolean;
+            county: null | string;
+            town: null | string;
+            physicalAddress: null | string;
+            phoneNumber: null | string;
+            email: null | string;
+        };
         PublicLoanProduct: {
             code: string;
             name: string;
@@ -3481,6 +4344,13 @@ export interface components {
             requiresGuarantors: boolean;
             /** Format: int32 */
             minGuarantors: number | string;
+            category: components["schemas"]["LoanCategory"];
+            features: string[];
+            requirements: string[];
+            amountNote: null | string;
+            applicationFormUrl: null | string;
+            /** Format: int32 */
+            displayOrder: number | string;
         };
         PublicSavingsProduct: {
             code: string;
@@ -3499,6 +4369,22 @@ export interface components {
             interestRateBps: number | string;
             /** Format: int32 */
             termMonths: null | number | string;
+            features: string[];
+            requirements: string[];
+            amountNote: null | string;
+            applicationFormUrl: null | string;
+            /** Format: int32 */
+            displayOrder: number | string;
+        };
+        PublicServiceResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            description: null | string;
+            icon: string;
+            /** Format: int32 */
+            displayOrder: number | string;
+            isActive: boolean;
         };
         Ratio: {
             name: string;
@@ -3539,6 +4425,9 @@ export interface components {
             isReconciled: boolean;
             checks: string[];
             failures: string[];
+        };
+        RejectInvitationRequest: {
+            reason: null | string;
         };
         RejectJournalRequest: {
             reason: string;
@@ -3585,8 +4474,10 @@ export interface components {
             /** Format: double */
             total: number | string;
         };
-        ResetPasswordRequest: {
-            newPassword: string;
+        RequestOtpRequest: {
+            phone: string;
+            pin: string;
+            deviceId: string;
         };
         RestructureRequest: {
             /** Format: int32 */
@@ -3597,6 +4488,17 @@ export interface components {
         };
         /** @enum {unknown} */
         ReturnStatus: "Generated" | "Submitted" | "Withdrawn";
+        RevealBalanceRequest: {
+            idempotencyKey: string;
+        };
+        RevealBalanceResponse: {
+            charged: boolean;
+            /** Format: double */
+            fee: number | string;
+            /** Format: date-time */
+            visibleUntil: null | string;
+            account: components["schemas"]["MySavingsAccountResponse"];
+        };
         ReverseJournalRequest: {
             reason: string;
         };
@@ -3621,9 +4523,34 @@ export interface components {
             accountReference: null | string;
             failureReason: null | string;
         };
+        SaveBranchRequest: {
+            code: string;
+            name: string;
+            isHeadOffice: boolean;
+            county: null | string;
+            town: null | string;
+            physicalAddress: null | string;
+            phoneNumber: null | string;
+            email: null | string;
+            /** Format: int32 */
+            displayOrder: number | string;
+            /** @default true */
+            isActive: boolean;
+        };
         SaveMemberRequest: {
             details: components["schemas"]["PersonalDetailsDto"];
             nextOfKin: components["schemas"]["NextOfKinDto"];
+            /** Format: uuid */
+            branchId?: null | string;
+        };
+        SavePublicServiceRequest: {
+            name: string;
+            description: null | string;
+            icon: string;
+            /** Format: int32 */
+            displayOrder: number | string;
+            /** @default true */
+            isActive: boolean;
         };
         SaveRoleRequest: {
             name: string;
@@ -3707,6 +4634,18 @@ export interface components {
             accountNumber: string;
             loanNumber: null | string;
         };
+        SelfWithdrawalRequest: {
+            accountNumber: string;
+            /** Format: double */
+            amount: number | string;
+            channel: components["schemas"]["PayoutChannel"];
+            destination: null | string;
+            narrative: null | string;
+        };
+        SetMemberBranchRequest: {
+            /** Format: uuid */
+            branchId: null | string;
+        };
         SetProvisioningConfigRequest: {
             buckets: components["schemas"]["AgingBucketDraft"][];
             source: null | string;
@@ -3720,9 +4659,69 @@ export interface components {
             declineIfBureauListed: boolean;
             source: null | string;
         };
+        SetUserBranchRequest: {
+            /** Format: uuid */
+            branchId: null | string;
+        };
         SetUserRolesRequest: {
             roleIds: string[];
         };
+        ShareListingResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            sellerMemberId: string;
+            sellerSharesAccountNumber: string;
+            /** Format: double */
+            amount: number | string;
+            status: components["schemas"]["ShareListingStatus"];
+            /** Format: date-time */
+            listedAt: string;
+            /** Format: uuid */
+            buyerMemberId: null | string;
+            buyerSharesAccountNumber: null | string;
+            /** Format: date-time */
+            claimedAt: null | string;
+            /** Format: uuid */
+            decidedByUserId: null | string;
+            /** Format: date-time */
+            decidedAt: null | string;
+            rejectionReason: null | string;
+            journalReference: null | string;
+        };
+        /** @enum {unknown} */
+        ShareListingStatus: "Open" | "PendingApproval" | "Approved" | "Rejected" | "Cancelled";
+        StaffInvitationResponse: {
+            /** Format: uuid */
+            id: string;
+            userName: string;
+            email: string;
+            displayName: string;
+            phoneNumber: null | string;
+            roleIds: string[];
+            status: components["schemas"]["StaffInvitationStatus"];
+            /** Format: uuid */
+            proposedByUserId: string;
+            /** Format: date-time */
+            proposedAt: string;
+            /** Format: uuid */
+            decidedByUserId: null | string;
+            /** Format: date-time */
+            decidedAt: null | string;
+            rejectionReason: null | string;
+            /** Format: uuid */
+            userId: null | string;
+            /** Format: date-time */
+            lastSentAt: null | string;
+            /** Format: date-time */
+            acceptedAt: null | string;
+            /** Format: uuid */
+            branchId: null | string;
+        };
+        /** @enum {unknown} */
+        StaffInvitationStatus: "PendingApproval" | "Sent" | "Accepted" | "Rejected" | "Revoked";
+        /** @enum {unknown} */
+        StaffUserStatus: "Invited" | "Active" | "Deactivated";
         StatementLine: {
             /** Format: date */
             valueDate: string;
@@ -3802,6 +4801,10 @@ export interface components {
             tagline: string;
             supportEmail: string;
             supportPhone: string;
+            faviconUrl: null | string;
+            lightModeLogoUrl: null | string;
+            darkModeLogoUrl: null | string;
+            demo: null | components["schemas"]["DemoNotice"];
         };
         TrialBalance: {
             segment: null | components["schemas"]["Segment"];
@@ -3841,6 +4844,9 @@ export interface components {
             tagline: string;
             supportEmail: string;
             supportPhone: string;
+            faviconUrl?: null | string;
+            lightModeLogoUrl?: null | string;
+            darkModeLogoUrl?: null | string;
         };
         UpdateLoanProductRequest: {
             name: string;
@@ -3903,6 +4909,15 @@ export interface components {
             /** Format: date-time */
             lastLoginAt: null | string;
             roleIds: string[];
+            status: components["schemas"]["StaffUserStatus"];
+            mfaEnabled: boolean;
+            /** Format: date-time */
+            activatedAt: null | string;
+            /** Format: uuid */
+            branchId: null | string;
+        };
+        VerifyPinRequest: {
+            pin: string;
         };
         WithdrawalRequestDto: {
             /** Format: double */
@@ -3953,6 +4968,90 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    ListPublicServices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicServiceResponse"][];
+                };
+            };
+        };
+    };
+    ListPublicBranches: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicBranch"][];
+                };
+            };
+        };
+    };
+    RequestMemberLoginOtp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestOtpRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VerifyMyPin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyPinRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     GetMyStatement: {
         parameters: {
             query?: {
@@ -4152,6 +5251,180 @@ export interface operations {
             };
         };
     };
+    ListBranches: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchResponse"][];
+                };
+            };
+        };
+    };
+    CreateBranch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveBranchRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchResponse"];
+                };
+            };
+        };
+    };
+    UpdateBranch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveBranchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchResponse"];
+                };
+            };
+        };
+    };
+    ListPublicServicesAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicServiceResponse"][];
+                };
+            };
+        };
+    };
+    CreatePublicService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavePublicServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicServiceResponse"];
+                };
+            };
+        };
+    };
+    UpdatePublicService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavePublicServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicServiceResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeletePublicService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     UpdateTenantBranding: {
         parameters: {
             query?: never;
@@ -4177,10 +5450,17 @@ export interface operations {
     GetAuditLog: {
         parameters: {
             query?: {
-                page?: number | string;
-                pageSize?: number | string;
+                action?: string;
                 entityType?: string;
                 entityId?: string;
+                actorUserId?: string;
+                branchId?: string;
+                outcome?: string;
+                from?: string;
+                to?: string;
+                search?: string;
+                page?: number | string;
+                pageSize?: number | string;
             };
             header?: never;
             path?: never;
@@ -4195,6 +5475,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PagedResultOfAuditLogResponse"];
+                };
+            };
+        };
+    };
+    ExportAuditLog: {
+        parameters: {
+            query?: {
+                action?: string;
+                entityType?: string;
+                entityId?: string;
+                actorUserId?: string;
+                branchId?: string;
+                outcome?: string;
+                from?: string;
+                to?: string;
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VerifyAuditLog: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditChainCheck"];
                 };
             };
         };
@@ -4371,30 +5702,6 @@ export interface operations {
             };
         };
     };
-    CreateUser: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateUserRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserResponse"];
-                };
-            };
-        };
-    };
     GetUser: {
         parameters: {
             query?: never;
@@ -4417,6 +5724,168 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ListStaffInvitations: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["StaffInvitationStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffInvitationResponse"][];
+                };
+            };
+        };
+    };
+    InviteStaffUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteUserRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffInvitationResponse"];
+                };
+            };
+        };
+    };
+    ApproveStaffInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffInvitationResponse"];
+                };
+            };
+        };
+    };
+    RejectStaffInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectInvitationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffInvitationResponse"];
+                };
+            };
+        };
+    };
+    ResendStaffInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffInvitationResponse"];
+                };
+            };
+        };
+    };
+    RevokeStaffInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffInvitationResponse"];
+                };
+            };
+        };
+    };
+    SetUserBranch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetUserBranchRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4488,7 +5957,7 @@ export interface operations {
             };
         };
     };
-    ResetUserPassword: {
+    SendUserPasswordReset: {
         parameters: {
             query?: never;
             header?: never;
@@ -4497,11 +5966,27 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResetPasswordRequest"];
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
+    };
+    ResetUserMfa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {
@@ -4696,6 +6181,7 @@ export interface operations {
         parameters: {
             query?: {
                 status?: components["schemas"]["JournalEntryStatus"];
+                branchId?: string;
                 page?: number | string;
                 pageSize?: number | string;
             };
@@ -4891,6 +6377,7 @@ export interface operations {
             query?: {
                 search?: string;
                 status?: components["schemas"]["KycStatus"];
+                branchId?: string;
                 page?: number | string;
                 pageSize?: number | string;
             };
@@ -5138,6 +6625,32 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    SetMemberBranch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetMemberBranchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
             };
         };
     };
@@ -5431,6 +6944,32 @@ export interface operations {
             };
         };
     };
+    UpdateSavingsProductListing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductListing"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductResponse"];
+                };
+            };
+        };
+    };
     OpenSavingsAccount: {
         parameters: {
             query?: never;
@@ -5573,7 +7112,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SavingsAccountResponse"][];
+                    "application/json": components["schemas"]["MySavingsAccountResponse"][];
                 };
             };
         };
@@ -5593,7 +7132,507 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MemberSavingsSummary"];
+                    "application/json": components["schemas"]["MySavingsSummaryResponse"];
+                };
+            };
+        };
+    };
+    RevealMyBalance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountNumber: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevealBalanceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevealBalanceResponse"];
+                };
+            };
+        };
+    };
+    QuoteMyFee: {
+        parameters: {
+            query: {
+                transactionType: components["schemas"]["FeeTransactionType"];
+                accountNumber: string;
+                channel?: components["schemas"]["FeeChannel"];
+                amount?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeeQuoteResponse"];
+                };
+            };
+        };
+    };
+    GetMyWithdrawals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WithdrawalResponse"][];
+                };
+            };
+        };
+    };
+    RequestMyWithdrawal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelfWithdrawalRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WithdrawalResponse"];
+                };
+            };
+        };
+    };
+    GetMyDividends: {
+        parameters: {
+            query?: {
+                year?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyDividendResponse"][];
+                };
+            };
+        };
+    };
+    ListMySharesForSale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateShareListingRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareListingResponse"];
+                };
+            };
+        };
+    };
+    BrowseOpenShareListings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareListingResponse"][];
+                };
+            };
+        };
+    };
+    GetMyShareListings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareListingResponse"][];
+                };
+            };
+        };
+    };
+    ClaimShareListing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareListingResponse"];
+                };
+            };
+        };
+    };
+    CancelMyShareListing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareListingResponse"];
+                };
+            };
+        };
+    };
+    ListFeeRules: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["FeeRuleStatus"];
+                transactionType?: components["schemas"]["FeeTransactionType"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeeRuleResponse"][];
+                };
+            };
+        };
+    };
+    CreateFeeRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFeeRuleCommand"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeeRuleResponse"];
+                };
+            };
+        };
+    };
+    GetFeeRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeeRuleResponse"];
+                };
+            };
+        };
+    };
+    ApproveFeeRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeeRuleResponse"];
+                };
+            };
+        };
+    };
+    RejectFeeRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeeRuleResponse"];
+                };
+            };
+        };
+    };
+    DeactivateFeeRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeeRuleResponse"];
+                };
+            };
+        };
+    };
+    QuoteFee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeeQuoteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeeQuoteResponse"];
+                };
+            };
+        };
+    };
+    ListShareListings: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["ShareListingStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareListingResponse"][];
+                };
+            };
+        };
+    };
+    ListPendingShareListings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareListingResponse"][];
+                };
+            };
+        };
+    };
+    GetShareListing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareListingResponse"];
+                };
+            };
+        };
+    };
+    ApproveShareListing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareListingResponse"];
+                };
+            };
+        };
+    };
+    RejectShareListing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareListingResponse"];
                 };
             };
         };
@@ -5961,6 +8000,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdateLoanProductRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanProductResponse"];
+                };
+            };
+        };
+    };
+    UpdateLoanProductListing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoanProductListingRequest"];
             };
         };
         responses: {

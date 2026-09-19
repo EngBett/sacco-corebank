@@ -24,7 +24,7 @@ update `backend/seed/` so that:
 
 ## Demo tenant
 
-All seed data belongs to one tenant: **Demo SACCO**. This lets a single login/subdomain
+All seed data belongs to one tenant: **Icodeio SACCO**. This lets a single login/subdomain
 demo the entire platform coherently — one branding theme, one consistent dataset, one
 walkthrough script.
 

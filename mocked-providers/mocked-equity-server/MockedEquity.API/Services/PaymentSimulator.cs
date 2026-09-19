@@ -189,7 +189,7 @@ public class PaymentSimulator : IPaymentSimulator
             "success" => Simulation.Succeed,
             _ => amount switch
             {
-                // Mirrors the amount-based conventions the other Pochipay mocks use.
+                // Mirrors the amount-based conventions the other mocked providers in this repo use.
                 13m => Simulation.FailAsync,
                 14m => Simulation.RejectAtAck,
                 15m => Simulation.NoCallback,

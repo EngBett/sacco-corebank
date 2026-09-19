@@ -14,6 +14,11 @@ public class IdentityDbContext(DbContextOptions<IdentityDbContext> options, ITen
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<PersistedGrantRecord> PersistedGrants => Set<PersistedGrantRecord>();
     public DbSet<MemberLogin> MemberLogins => Set<MemberLogin>();
+    public DbSet<MemberTrustedDevice> MemberTrustedDevices => Set<MemberTrustedDevice>();
+    public DbSet<MemberOtpChallenge> MemberOtpChallenges => Set<MemberOtpChallenge>();
+    public DbSet<StaffInvitation> StaffInvitations => Set<StaffInvitation>();
+    public DbSet<StaffAccountToken> StaffAccountTokens => Set<StaffAccountToken>();
+    public DbSet<StaffRecoveryCode> StaffRecoveryCodes => Set<StaffRecoveryCode>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -27,8 +32,44 @@ public class IdentityDbContext(DbContextOptions<IdentityDbContext> options, ITen
             b.Property(u => u.DisplayName).HasMaxLength(150).IsRequired();
             b.Property(u => u.PhoneNumber).HasMaxLength(20);
             b.Property(u => u.PasswordHash).HasMaxLength(500).IsRequired();
+            b.Property(u => u.TotpSecret).HasMaxLength(200);
+            b.Property(u => u.TotpPendingSecret).HasMaxLength(200);
+            b.Ignore(u => u.Status);
+            b.Ignore(u => u.IsActivated);
+            b.Ignore(u => u.IsMfaEnabled);
             b.HasMany(u => u.Roles).WithOne().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
             b.Navigation(u => u.Roles).AutoInclude();
+        });
+
+        mb.Entity<StaffInvitation>(b =>
+        {
+            b.ToTable("staff_invitations");
+            b.HasKey(i => i.Id);
+            b.Property(i => i.UserName).HasMaxLength(100).IsRequired();
+            b.Property(i => i.Email).HasMaxLength(200).IsRequired();
+            b.Property(i => i.DisplayName).HasMaxLength(150).IsRequired();
+            b.Property(i => i.PhoneNumber).HasMaxLength(20);
+            b.Property(i => i.Status).HasConversion<string>().HasMaxLength(20);
+            b.Property(i => i.RejectionReason).HasMaxLength(500);
+            b.HasIndex(i => new { i.TenantId, i.Status });
+        });
+
+        mb.Entity<StaffAccountToken>(b =>
+        {
+            b.ToTable("staff_account_tokens");
+            b.HasKey(t => t.Id);
+            b.Property(t => t.Purpose).HasConversion<string>().HasMaxLength(20);
+            b.Property(t => t.TokenHash).HasMaxLength(64).IsRequired();
+            b.HasIndex(t => t.TokenHash).IsUnique();
+            b.HasIndex(t => new { t.TenantId, t.UserId, t.Purpose });
+        });
+
+        mb.Entity<StaffRecoveryCode>(b =>
+        {
+            b.ToTable("staff_recovery_codes");
+            b.HasKey(c => c.Id);
+            b.Property(c => c.CodeHash).HasMaxLength(64).IsRequired();
+            b.HasIndex(c => new { c.TenantId, c.UserId });
         });
 
         mb.Entity<UserRole>(b =>
@@ -65,6 +106,26 @@ public class IdentityDbContext(DbContextOptions<IdentityDbContext> options, ITen
             b.Property(l => l.PhoneNumber).HasMaxLength(20).IsRequired();
             b.Property(l => l.DisplayName).HasMaxLength(150).IsRequired();
             b.Property(l => l.PinHash).HasMaxLength(500).IsRequired();
+        });
+
+        mb.Entity<MemberTrustedDevice>(b =>
+        {
+            b.ToTable("member_trusted_devices");
+            b.HasKey(d => d.Id);
+            b.HasIndex(d => new { d.TenantId, d.MemberId, d.DeviceId }).IsUnique();
+            b.Property(d => d.DeviceId).HasMaxLength(200).IsRequired();
+            b.Property(d => d.DeviceName).HasMaxLength(150);
+            b.Property(d => d.Platform).HasMaxLength(20).IsRequired();
+        });
+
+        mb.Entity<MemberOtpChallenge>(b =>
+        {
+            b.ToTable("member_otp_challenges");
+            b.HasKey(c => c.Id);
+            b.HasIndex(c => new { c.TenantId, c.MemberId, c.DeviceId });
+            b.Property(c => c.DeviceId).HasMaxLength(200).IsRequired();
+            b.Property(c => c.PhoneNumber).HasMaxLength(20).IsRequired();
+            b.Property(c => c.CodeHash).HasMaxLength(500).IsRequired();
         });
 
         mb.Entity<PersistedGrantRecord>(b =>

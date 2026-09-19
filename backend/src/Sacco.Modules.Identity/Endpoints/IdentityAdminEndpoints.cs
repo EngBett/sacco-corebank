@@ -14,10 +14,14 @@ namespace Sacco.Modules.Identity.Endpoints;
 
 public sealed record RoleResponse(Guid Id, string Name, string Description, bool IsSystem, IReadOnlyList<string> Permissions);
 public sealed record SaveRoleRequest(string Name, string Description, IReadOnlyList<string> Permissions);
-public sealed record UserResponse(Guid Id, string UserName, string Email, string DisplayName, string? PhoneNumber, bool IsActive, bool MustChangePassword, DateTimeOffset? LastLoginAt, IReadOnlyList<Guid> RoleIds);
-public sealed record CreateUserRequest(string UserName, string Email, string DisplayName, string? PhoneNumber, string Password, IReadOnlyList<Guid> RoleIds);
+public sealed record UserResponse(Guid Id, string UserName, string Email, string DisplayName, string? PhoneNumber, bool IsActive, bool MustChangePassword, DateTimeOffset? LastLoginAt, IReadOnlyList<Guid> RoleIds,
+    StaffUserStatus Status, bool MfaEnabled, DateTimeOffset? ActivatedAt, Guid? BranchId);
 public sealed record SetUserRolesRequest(IReadOnlyList<Guid> RoleIds);
-public sealed record ResetPasswordRequest(string NewPassword);
+public sealed record InviteUserRequest(string UserName, string Email, string DisplayName, string? PhoneNumber, IReadOnlyList<Guid> RoleIds, Guid? BranchId = null);
+public sealed record SetUserBranchRequest(Guid? BranchId);
+public sealed record RejectInvitationRequest(string? Reason);
+public sealed record StaffInvitationResponse(Guid Id, string UserName, string Email, string DisplayName, string? PhoneNumber, IReadOnlyList<Guid> RoleIds, StaffInvitationStatus Status,
+    Guid ProposedByUserId, DateTimeOffset ProposedAt, Guid? DecidedByUserId, DateTimeOffset? DecidedAt, string? RejectionReason, Guid? UserId, DateTimeOffset? LastSentAt, DateTimeOffset? AcceptedAt, Guid? BranchId);
 public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 public sealed record MeResponse(Guid Id, string UserName, string DisplayName, string Email, string TenantSlug, IReadOnlyList<string> Roles, IReadOnlyList<string> Permissions);
 
@@ -48,7 +52,8 @@ public sealed class IdentityAdminEndpoints : IModuleEndpoints
 
         admin.MapGet("/roles", async (IdentityDbContext db, CancellationToken ct) =>
             TypedResults.Ok(await db.Roles.AsNoTracking().OrderBy(r => r.Name).Select(r => ToResponse(r)).ToListAsync(ct)))
-            .RequirePermission(Permissions.Admin.RolesManage).WithName("ListRoles");
+            // Read-only: whoever may invite or manage staff has to pick roles, not just those who edit role bundles.
+            .RequireAnyPermission(Permissions.Admin.RolesManage, Permissions.Admin.UsersManage, Permissions.Admin.UsersInvite).WithName("ListRoles");
 
         admin.MapPost("/roles", async (SaveRoleRequest req, RoleService roles, ICurrentUser user, CancellationToken ct) =>
         {
@@ -76,11 +81,38 @@ public sealed class IdentityAdminEndpoints : IModuleEndpoints
             return u is null ? TypedResults.NotFound() : TypedResults.Ok(ToResponse(u));
         }).RequirePermission(Permissions.Admin.UsersManage).WithName("GetUser");
 
-        admin.MapPost("/users", async (CreateUserRequest req, UserService users, ICurrentUser user, CancellationToken ct) =>
+        // ---- Invitations (ADR 0016): nobody sets a password for someone else ----
+        admin.MapGet("/users/invitations", async (StaffInvitationService invitations, StaffInvitationStatus? status, CancellationToken ct) =>
+            TypedResults.Ok((await invitations.ListAsync(status, ct)).Select(ToResponse).ToList()))
+            .RequireAnyPermission(Permissions.Admin.UsersManage, Permissions.Admin.UsersInvite).WithName("ListStaffInvitations");
+
+        admin.MapPost("/users/invitations", async (InviteUserRequest req, StaffInvitationService invitations, ICurrentUser user, CancellationToken ct) =>
         {
-            var created = await users.CreateAsync(null, req.UserName, req.Email, req.DisplayName, req.PhoneNumber, req.Password, req.RoleIds, user.UserId, mustChangePassword: true, ct);
-            return TypedResults.Created($"/api/admin/users/{created.Id}", ToResponse(created));
-        }).RequirePermission(Permissions.Admin.UsersManage).WithName("CreateUser");
+            var invitation = await invitations.ProposeAsync(new ProposeInvitationCommand(req.UserName, req.Email, req.DisplayName, req.PhoneNumber, req.RoleIds, req.BranchId), user.UserId, ct);
+            return TypedResults.Created($"/api/admin/users/invitations/{invitation.Id}", ToResponse(invitation));
+        }).RequireAnyPermission(Permissions.Admin.UsersManage, Permissions.Admin.UsersInvite).WithName("InviteStaffUser");
+
+        admin.MapPost("/users/invitations/{id:guid}/approve", async (Guid id, StaffInvitationService invitations, ICurrentUser user, CancellationToken ct) =>
+            TypedResults.Ok(ToResponse(await invitations.ApproveAsync(id, user.UserId, ct))))
+            .RequirePermission(Permissions.Admin.UsersManage).WithName("ApproveStaffInvitation");
+
+        admin.MapPost("/users/invitations/{id:guid}/reject", async (Guid id, RejectInvitationRequest req, StaffInvitationService invitations, ICurrentUser user, CancellationToken ct) =>
+            TypedResults.Ok(ToResponse(await invitations.RejectAsync(id, req.Reason, user.UserId, ct))))
+            .RequirePermission(Permissions.Admin.UsersManage).WithName("RejectStaffInvitation");
+
+        admin.MapPost("/users/invitations/{id:guid}/resend", async (Guid id, StaffInvitationService invitations, ICurrentUser user, CancellationToken ct) =>
+            TypedResults.Ok(ToResponse(await invitations.ResendAsync(id, user.UserId, ct))))
+            .RequirePermission(Permissions.Admin.UsersManage).WithName("ResendStaffInvitation");
+
+        admin.MapPost("/users/invitations/{id:guid}/revoke", async (Guid id, StaffInvitationService invitations, ICurrentUser user, CancellationToken ct) =>
+            TypedResults.Ok(ToResponse(await invitations.RevokeAsync(id, user.UserId, ct))))
+            .RequirePermission(Permissions.Admin.UsersManage).WithName("RevokeStaffInvitation");
+
+        admin.MapPut("/users/{id:guid}/branch", async (Guid id, SetUserBranchRequest req, UserService users, IBranchDirectory branches, ICurrentUser user, CancellationToken ct) =>
+        {
+            await users.SetBranchAsync(id, req.BranchId, branches, user.UserId, ct);
+            return TypedResults.NoContent();
+        }).RequirePermission(Permissions.Admin.UsersManage).WithName("SetUserBranch");
 
         admin.MapPut("/users/{id:guid}/roles", async (Guid id, SetUserRolesRequest req, UserService users, ICurrentUser user, CancellationToken ct) =>
         {
@@ -100,13 +132,25 @@ public sealed class IdentityAdminEndpoints : IModuleEndpoints
             return TypedResults.NoContent();
         }).RequirePermission(Permissions.Admin.UsersManage).WithName("ReactivateUser");
 
-        admin.MapPost("/users/{id:guid}/reset-password", async (Guid id, ResetPasswordRequest req, UserService users, ICurrentUser user, CancellationToken ct) =>
+        // The administrator never sees or chooses the password: the user gets a one-time link.
+        admin.MapPost("/users/{id:guid}/send-password-reset", async (Guid id, IdentityDbContext db, StaffAccountService accounts, ICurrentUser user, CancellationToken ct) =>
         {
-            await users.ResetPasswordAsync(id, req.NewPassword, user.UserId, ct);
+            var target = await db.Users.FirstOrDefaultAsync(u => u.Id == id, ct) ?? throw new Sacco.Shared.Domain.NotFoundException("User", id);
+            if (!target.IsActive) throw new Sacco.Shared.Domain.DomainRuleException("identity.user.inactive", "Reactivate the user before sending a password reset.");
+            await accounts.SendPasswordResetAsync(target, user.UserId, ct);
             return TypedResults.NoContent();
-        }).RequirePermission(Permissions.Admin.UsersManage).WithName("ResetUserPassword");
+        }).RequirePermission(Permissions.Admin.UsersManage).WithName("SendUserPasswordReset");
+
+        admin.MapPost("/users/{id:guid}/reset-mfa", async (Guid id, StaffMfaService mfa, ICurrentUser user, CancellationToken ct) =>
+        {
+            await mfa.ResetAsync(id, user.UserId, ct);
+            return TypedResults.NoContent();
+        }).RequirePermission(Permissions.Admin.UsersManage).WithName("ResetUserMfa");
     }
 
     private static RoleResponse ToResponse(Role r) => new(r.Id, r.Name, r.Description, r.IsSystem, r.Permissions.Select(p => p.Permission).OrderBy(p => p).ToList());
-    private static UserResponse ToResponse(StaffUser u) => new(u.Id, u.UserName, u.Email, u.DisplayName, u.PhoneNumber, u.IsActive, u.MustChangePassword, u.LastLoginAt, u.Roles.Select(r => r.RoleId).ToList());
+    private static UserResponse ToResponse(StaffUser u) => new(u.Id, u.UserName, u.Email, u.DisplayName, u.PhoneNumber, u.IsActive, u.MustChangePassword, u.LastLoginAt, u.Roles.Select(r => r.RoleId).ToList(),
+        u.Status, u.IsMfaEnabled, u.ActivatedAt, u.BranchId);
+    private static StaffInvitationResponse ToResponse(StaffInvitation i) => new(i.Id, i.UserName, i.Email, i.DisplayName, i.PhoneNumber, i.RoleIds, i.Status,
+        i.ProposedByUserId, i.ProposedAt, i.DecidedByUserId, i.DecidedAt, i.RejectionReason, i.UserId, i.LastSentAt, i.AcceptedAt, i.BranchId);
 }

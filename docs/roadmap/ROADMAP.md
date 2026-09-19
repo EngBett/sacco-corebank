@@ -74,7 +74,11 @@ sandbox credentials only.
 - Added 2026-09-16: nightly branded PDF digest (ADR 0013) — capital adequacy, liquidity and portfolio quality rendered
   to PDF via headless Chromium (PuppeteerSharp) at midnight and emailed to admin-configured recipients; `IEmailSender`
   is now a Shared contract with attachment support, and Admin → Daily PDF digest previews/sends it on demand.
-- **Exit criterion**: Demo SACCO's portal and public site both render correctly themed, every
+- Added 2026-09-16: `mobile/` — the member self-service Flutter app (ADR 0008: login,
+  accounts/balances, statements, deposits via M-Pesa/Airtel Money/Equity, withdrawals via
+  M-Pesa/Airtel Money/bank Pesalink, dividends by financial year). Needed two new endpoints,
+  `POST/GET /api/self/withdrawals` and `GET /api/self/dividends`, both maker-checker safe.
+- **Exit criterion**: Icodeio SACCO's portal and public site both render correctly themed, every
   seeded role can log into the portal and see role-appropriate screens, a Turnstile-protected
   membership application submits successfully to a pending-review queue.
 
